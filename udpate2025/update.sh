@@ -13,7 +13,8 @@ echo "--- 2. 使用 Docker Compose 重建并重启服务 ---"
 # --build: 强制重新构建镜像
 # -d: 在后台运行容器
 # 注意：新版命令是 "docker compose"（中间是空格）
-docker compose up --build -d
+# 我们将所有输出（包括错误）重定向到 build.log 文件，以便进行完整的调试
+docker compose up --build -d > build.log 2>&1
 
 echo "--- 3. 清理旧的、未使用的 Docker 镜像 ---"
 # 这会删除所有悬空（dangling）的镜像，释放磁盘空间
