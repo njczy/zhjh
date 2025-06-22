@@ -24,26 +24,46 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 
-# Local settings
+# Local development
 .vscode
 .idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
 
-# macOS
+# System files
 .DS_Store
+Thumbs.db
 
 # Git
 .git
 
-# System files
-Thumbs.db
+# Cache directories
+.cache
+.parcel-cache
+.eslintcache
 
-# Deployment packages
-udpate2025
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+.nyc_output
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache
+.npm
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
 
 # 运行时数据
 pids
@@ -73,9 +93,6 @@ build/Release
 # 依赖目录
 node_modules/
 jspm_packages/
-
-# TypeScript缓存
-*.tsbuildinfo
 
 # 可选的npm缓存目录
 .npm
@@ -107,7 +124,6 @@ jspm_packages/
 
 # Gatsby文件
 .cache/
-public
 
 # Storybook构建输出
 .out
