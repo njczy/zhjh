@@ -26,6 +26,11 @@ COPY . .
 # 执行构建命令
 RUN pnpm build
 
+# --- 诊断步骤 ---
+# 在执行复制命令前，递归列出当前目录下的所有文件和文件夹
+# 这能帮助我们确认 'pnpm build' 命令执行后，'public' 目录是否还存在
+RUN echo "--- Debugging file list before copy ---" && ls -laR
+
 # 在构建阶段，就将所有必要文件整合到 standalone 目录中
 # 这种"先打包，再复制"的方式更健壮，可以避免最终阶段找不到文件的问题
 RUN cp -r ./public ./.next/standalone/public
