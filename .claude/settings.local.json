@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next:*)",
+      "Bash(NODE_OPTIONS='--openssl-legacy-provider' npx next dev)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(NEXT_DISABLE_SWC_WASM=1 npm run dev)",
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(ss:*)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(claude mcp)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_file",
+      "Bash(cp:*)",
+      "Bash(rg:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(chmod:*)",
+      "Bash(NEXT_DISABLE_SWC_WASM=1 npm run build)",
+      "Bash(npm i:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(cat:*)"
+    ],
+    "deny": []
+  }
+}

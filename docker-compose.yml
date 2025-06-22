@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    # 容器名称
+    container_name: zhjh_app
+    # 使用当前目录下的 Dockerfile 进行构建
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # 端口映射：将主机的 3000 端口映射到容器的 3000 端口
+    ports:
+      - "3000:3000"
+    # 重启策略：除非手动停止，否则容器总是在退出时重启
+    restart: unless-stopped
+    # 网络模式：使用 bridge 网络
+    networks:
+      - default_network
+
+networks:
+  default_network:
+    driver: bridge 
