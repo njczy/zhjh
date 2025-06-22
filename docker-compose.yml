@@ -8,6 +8,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # 临时添加此项以禁用缓存，进行问题诊断
+      no_cache: true
     # 端口映射：将主机的 3000 端口映射到容器的 3000 端口
     ports:
       - "3000:3000"
