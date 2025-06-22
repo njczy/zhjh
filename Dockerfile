@@ -26,6 +26,11 @@ COPY . .
 # 执行构建命令
 RUN pnpm build
 
+# 在构建阶段，就将所有必要文件整合到 standalone 目录中
+# 这种"先打包，再复制"的方式更健壮，可以避免最终阶段找不到文件的问题
+RUN cp -r ./public ./.next/standalone/public
+RUN cp -r ./.next/static ./.next/standalone/.next/static
+
 # -------------------------
 # ---- 2. 运行阶段 ----
 # -------------------------
@@ -41,13 +46,8 @@ ENV NEXT_TELEMETRY_DISABLED 1
 # 设置 Node.js 运行环境为 production
 ENV NODE_ENV production
 
-# 从构建阶段复制构建产物
-# 1. 复制 standalone 目录 (修正路径：从 .next/standalone 复制)
+# 从构建阶段复制已经准备好的、包含所有产物的 standalone 目录
 COPY --from=builder /app/.next/standalone ./
-# 2. 复制 public 目录
-COPY --from=builder /app/public ./public
-# 3. 复制 .next/static 目录 (修正路径：从 .next/static 复制)
-COPY --from=builder /app/.next/static ./.next/static
 
 # 暴露端口 3000
 EXPOSE 3000
