@@ -1,23 +1,34 @@
 #!/bin/bash
+# 该脚本用于自动更新部署在服务器上的 zhjh 项目
 
-# 设置脚本在任何命令失败时立即退出
-set -e
+# 导航到脚本所在的目录，以确保后续命令在正确的项目根目录执行
+cd "$(dirname "$0")"
 
-echo "=== 开始更新应用 ==="
+# 1. 从 Git 仓库拉取最新的代码
+echo "正在从 GitHub 拉取最新代码..."
+git fetch origin main
+git reset --hard origin/main
+if [ $? -ne 0 ]; then
+    echo "从 GitHub 拉取代码失败，请检查网络连接或 Git 配置。"
+    exit 1
+fi
 
-# 步骤 1: 拉取最新的代码
-echo "--- 1. 从 GitHub 拉取最新的代码 ---"
-git pull origin main # 或者你的主分支名，例如 master
+# 2. 使用 Docker Compose 构建和重启服务
+echo "正在构建并重启 Docker 容器..."
+sudo docker compose build
+if [ $? -ne 0 ]; then
+    echo "Docker 构建失败，请检查 Dockerfile 或构建日志。"
+    exit 1
+fi
 
-echo "--- 2. 使用 Docker Compose 重建并重启服务 ---"
-# --build: 强制重新构建镜像
-# -d: 在后台运行容器
-# 注意：新版命令是 "docker compose"（中间是空格）
-# 我们将所有输出（包括错误）重定向到 build.log 文件，以便进行完整的调试
-docker compose up --build -d > build.log 2>&1
+sudo docker compose up -d
+if [ $? -ne 0 ]; then
+    echo "启动 Docker 容器失败，请检查 Docker 配置。"
+    exit 1
+fi
 
-echo "--- 3. 清理旧的、未使用的 Docker 镜像 ---"
-# 这会删除所有悬空（dangling）的镜像，释放磁盘空间
-docker image prune -f
+# 3. 清理无用的 Docker 镜像
+echo "正在清理旧的、无用的 Docker 镜像..."
+sudo docker image prune -f
 
-echo "=== 应用更新成功！ ===" 
+echo "项目更新完成！" 

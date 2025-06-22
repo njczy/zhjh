@@ -1,62 +1,42 @@
-# -------------------------
-# ---- 1. 构建阶段 ----
-# -------------------------
-# 使用官方的 Node.js 20 镜像作为基础构建环境
+# 1. Builder Stage
 FROM node:20-slim AS builder
-
-# 设置工作目录
 WORKDIR /app
 
-# 禁用 Next.js 的遥测数据收集
-ENV NEXT_TELEMETRY_DISABLED 1
+# Use Taobao mirror for npm
+RUN npm config set registry https://registry.npmmirror.com
 
-# 复制 package.json 和 lock 文件
-COPY package.json pnpm-lock.yaml ./
-
-# 安装 pnpm
+# Install pnpm
 RUN npm install -g pnpm
 
-# 安装依赖
-# 使用 --frozen-lockfile 确保安装的依赖版本与 lock 文件一致
+# Copy package files and install dependencies
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# 复制项目的其余文件
+# Copy the rest of the application source code
 COPY . .
 
-# 执行构建命令
+# Build the Next.js application
 RUN pnpm build
 
-# --- 诊断步骤 ---
-# 在执行复制命令前，递归列出当前目录下的所有文件和文件夹
-# 这能帮助我们确认 'pnpm build' 命令执行后，'public' 目录是否还存在
-RUN echo "--- Debugging file list before copy ---" && ls -laR
-
-# 在构建阶段，就将所有必要文件整合到 standalone 目录中
-# 这种"先打包，再复制"的方式更健壮，可以避免最终阶段找不到文件的问题
+# In standalone mode, Next.js builds a minimal server.
+# It also creates a 'standalone' folder with all necessary files.
+# We need to manually copy the 'public' and '.next/static' folders to the standalone output.
+# The standalone output is in .next/standalone
 RUN cp -r ./public ./.next/standalone/public
 RUN cp -r ./.next/static ./.next/standalone/.next/static
 
-# -------------------------
-# ---- 2. 运行阶段 ----
-# -------------------------
-# 使用另一个轻量的 Node.js 20 镜像作为最终运行环境
-FROM node:20-slim AS runner
 
-# 设置工作目录
+# 2. Runner Stage
+FROM node:20-slim AS runner
 WORKDIR /app
 
-# 禁用 Next.js 的遥测数据收集
-ENV NEXT_TELEMETRY_DISABLED 1
+# Set environment variables
+ENV NODE_ENV=production
+# The default port is 3000, but the standalone server will run on 3000 by default.
+# We will rely on the docker-compose port mapping to expose it.
 
-# 设置 Node.js 运行环境为 production
-ENV NODE_ENV production
-
-# 从构建阶段复制已经准备好的、包含所有产物的 standalone 目录
+# Copy the standalone output from the builder stage
 COPY --from=builder /app/.next/standalone ./
 
-# 暴露端口 3000
-EXPOSE 3000
-
-# 设置容器启动时执行的命令
-# 启动位于 standalone 目录下的 server.js
-CMD ["node", "server.js"] 
+# The standalone server is located at server.js
+CMD ["node", "server.js"]
