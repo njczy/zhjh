@@ -12,7 +12,8 @@ git pull origin main # 或者你的主分支名，例如 master
 echo "--- 2. 使用 Docker Compose 重建并重启服务 ---"
 # --build: 强制重新构建镜像
 # -d: 在后台运行容器
-docker-compose up --build -d
+# 注意：新版命令是 "docker compose"（中间是空格）
+docker compose up --build -d
 
 echo "--- 3. 清理旧的、未使用的 Docker 镜像 ---"
 # 这会删除所有悬空（dangling）的镜像，释放磁盘空间
