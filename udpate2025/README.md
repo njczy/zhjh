@@ -72,27 +72,84 @@ git commit -m "feat: initial project setup for deployment"
     sudo apt-get update -y
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-    # 4. 安装 Docker Compose
-    sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+    # 4. 安装 Docker Compose (官方推荐方式)
+    # 通过 apt 直接安装 Docker Compose 插件，这是最稳定可靠的方法
+    sudo apt-get install -y docker-compose-plugin
 
     # 5. 验证安装
-    git --version && docker --version && docker-compose --version
+    # 注意：插件版的验证命令没有中间的连字符 "-"
+    git --version && docker --version && docker compose version
     ```
     看到三个工具的版本号即表示成功。
 
+### 步骤 3.5: (关键) 配置 Docker 国内镜像加速
+
+这一步至关重要，它能解决从国外 Docker Hub 拉取镜像超时失败的问题。
+
+1.  **创建或覆盖 Docker 配置文件，写入国内镜像地址**：
+    ```bash
+    sudo mkdir -p /etc/docker
+    sudo tee /etc/docker/daemon.json <<-'EOF'
+    {
+      "registry-mirrors": ["https://docker.m.daocloud.io"]
+    }
+    EOF
+    ```
+
+2.  **重启 Docker 服务使配置生效**：
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl restart docker
+    ```
+
 ### 步骤 4：从 GitHub 克隆项目到服务器
 
-1.  **对于私有仓库，配置 SSH 密钥是最佳实践**：
-    *   在**服务器**上生成 SSH 密钥：`ssh-keygen -t rsa -b 4096 -C "your_email@example.com"` (一路回车)。
-    *   查看并复制公钥：`cat ~/.ssh/id_rsa.pub`
-    *   将公钥添加到您的 GitHub 仓库的 `Settings` -> `Deploy Keys` 中，并勾选 `Allow write access`。
+克隆项目的方式取决于您的仓库是 **公开的** 还是 **私有的**。
 
-2.  **克隆您的项目**：
+#### 方案 A：对于公开仓库 (您的情况，最简单)
+
+如果您的 GitHub 仓库是公开的，直接使用 HTTPS 地址克隆即可，无需任何密钥配置。
+
+1.  **在 GitHub 仓库页面**，点击 "Code" 按钮，确保 "HTTPS" 选项卡被选中，然后复制 URL。
+2.  **在服务器上执行克隆命令**：
     ```bash
-    # 使用 SSH 地址克隆，URL 从 GitHub 仓库页面复制
+    # 将下面的 URL 替换为您自己的仓库 HTTPS URL
+    git clone https://github.com/njczy/zhjh.git
+
+    # 进入项目目录
+    cd zhjh/
+    ```
+
+#### 方案 B：对于私有仓库 (推荐使用 SSH)
+
+如果您的仓库是私有的，使用部署密钥 (Deploy Key) 是最安全、最推荐的方式。
+
+1.  **在服务器上生成 SSH 密钥**：
+    ```bash
+    # 邮箱可以换成您自己的
+    ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+    ```
+    (提示时，一路按 Enter 键即可)
+
+2.  **查看并复制公钥**：
+    ```bash
+    cat ~/.ssh/id_rsa.pub
+    ```
+    (复制屏幕上输出的 `ssh-rsa` 开头的所有内容)
+
+3.  **在 GitHub 添加部署密钥**：
+    *   进入您的 GitHub 仓库，点击 `Settings` -> `Security` -> `Deploy keys`。
+    *   点击 `Add deploy key`。
+    *   `Title` 可以随便填 (例如 `my-jd-cloud-server`)。
+    *   将刚刚复制的公钥粘贴到 `Key` 文本框中。
+    *   **不要** 勾选 `Allow write access` (因为服务器只需要拉取代码，不需要推送，更安全)。
+    *   点击 `Add key`。
+
+4.  **使用 SSH 地址克隆您的项目**：
+    ```bash
+    # 在 GitHub 仓库页面，点击 "Code"，切换到 "SSH" 选项卡，复制 URL
     git clone git@github.com:your-username/your-repo-name.git
-    
+
     # 进入项目目录
     cd your-repo-name/
     ```
@@ -101,7 +158,8 @@ git commit -m "feat: initial project setup for deployment"
 
 在服务器的项目目录中，只需运行一个命令：
 ```bash
-sudo docker-compose up --build -d
+# 注意：新版命令是 "docker compose"（中间是空格）
+sudo docker compose up --build -d
 ```
 Docker 会自动完成所有工作。
 
@@ -126,7 +184,12 @@ Docker 会自动完成所有工作。
     ```bash
     ssh 用户名@服务器公网IP地址
     cd your-repo-name/  # 进入项目目录
-    ./udpate2025/update.sh # 直接运行更新脚本
+
+    # 首次拉取代码后，需要给更新脚本添加执行权限（此命令只需运行一次）
+    chmod +x udpate2025/update.sh
+
+    # 之后，每次更新都只需运行此脚本
+    ./udpate2025/update.sh
     ```
 
 脚本会自动从 GitHub 拉取最新的代码，然后重建 Docker 镜像并重启服务，全程无需手动上传文件。 
