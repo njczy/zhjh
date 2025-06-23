@@ -214,7 +214,7 @@ export const mockUsers: User[] = [
   // 发展策划部门
   {
     id: "7",
-    name: "罗拓",
+    name: "拓总",
     role: "部门专职",
     institute: "电试院",
     center: "",
@@ -222,7 +222,7 @@ export const mockUsers: User[] = [
   },
   {
     id: "8",
-    name: "邵剑",
+    name: "邵主任",
     role: "部门领导",
     institute: "电试院",
     center: "",
@@ -389,7 +389,7 @@ const generateMockProjects = (): Project[] => {
       feasibility: FEASIBILITIES[currentProjectId % FEASIBILITIES.length],
       projectBasis: PROJECT_BASES[currentProjectId % PROJECT_BASES.length],
       implementationPlan: `${name}的实施方案包括：1. 前期调研和方案设计；2. 采购设备和搭建环境；3. 系统开发和测试；4. 试运行和优化；5. 正式上线和推广应用。项目将分阶段实施，确保质量和进度。`,
-              departmentHead: ownerUser.center ? "林雪梅" : "邵剑", // 根据用户所属选择负责人
+              departmentHead: ownerUser.center ? "林雪梅" : "邵主任", // 根据用户所属选择负责人
       remarks: `${name}项目备注：该项目对于提升公司技术水平和市场竞争力具有重要意义，建议优先实施。`,
       financialRows: generateFinancialRows(startDate, endDate),
       attachmentFileName: `${name}-项目建议书.pdf`
@@ -1467,20 +1467,20 @@ export const approveApprovalReport = async (reportId: string, approved: boolean,
 // 同步更新所有相关数据
   projects = projects.map((p) => ({
     ...p,
-    owner: p.owner === "宋晓峰" ? "罗拓" : p.owner === "邓慧敏" ? "邵剑" : p.owner,
-    name: p.name.replace(/宋晓峰/g, "罗拓").replace(/邓慧敏/g, "邵剑"),
+    owner: p.owner === "宋晓峰" ? "拓总" : p.owner === "邓慧敏" ? "邵主任" : p.owner,
+    name: p.name.replace(/宋晓峰/g, "拓总").replace(/邓慧敏/g, "邵主任"),
   }));
   approvals = approvals.map((a) => ({
     ...a,
-    submitter: a.submitter === "宋晓峰" ? "罗拓" : a.submitter === "邓慧敏" ? "邵剑" : a.submitter,
-    approver: a.approver === "宋晓峰" ? "罗拓" : a.approver === "邓慧敏" ? "邵剑" : a.approver,
-    projectName: a.projectName.replace(/宋晓峰/g, "罗拓").replace(/邓慧敏/g, "邵剑"),
+    submitter: a.submitter === "宋晓峰" ? "拓总" : a.submitter === "邓慧敏" ? "邵主任" : a.submitter,
+    approver: a.approver === "宋晓峰" ? "拓总" : a.approver === "邓慧敏" ? "邵主任" : a.approver,
+    projectName: a.projectName.replace(/宋晓峰/g, "拓总").replace(/邓慧敏/g, "邵主任"),
   }));
   monthlyReviews.forEach((r) => {
-    if (r.reviewer === "宋晓峰") r.reviewer = "罗拓";
-    if (r.reviewer === "邓慧敏") r.reviewer = "邵剑";
-    if (r.projectName.includes("宋晓峰")) r.projectName = r.projectName.replace(/宋晓峰/g, "罗拓");
-    if (r.projectName.includes("邓慧敏")) r.projectName = r.projectName.replace(/邓慧敏/g, "邵剑");
+    if (r.reviewer === "宋晓峰") r.reviewer = "拓总";
+    if (r.reviewer === "邓慧敏") r.reviewer = "邵主任";
+    if (r.projectName.includes("宋晓峰")) r.projectName = r.projectName.replace(/宋晓峰/g, "拓总");
+    if (r.projectName.includes("邓慧敏")) r.projectName = r.projectName.replace(/邓慧敏/g, "邵主任");
   });
 
 // 月度审核参与人确认相关函数

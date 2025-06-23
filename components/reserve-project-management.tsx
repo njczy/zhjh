@@ -156,7 +156,7 @@ const getAvailableLeaders = (currentUser: { name: string; department: string; ce
     { id: "1", name: "徐海燕", role: "中心专职", center: "运营中心", department: "" },
     { id: "2", name: "马文博", role: "中心专职", center: "运营中心", department: "" },
     { id: "3", name: "林雪梅", role: "中心领导", center: "运营中心", department: "" },
-    { id: "7", name: "罗拓", role: "部门专职", center: "", department: "发展策划部门" },
+    { id: "7", name: "拓总", role: "部门专职", center: "", department: "发展策划部门" },
     { id: "8", name: "邵主任", role: "部门领导", center: "", department: "发展策划部门" },
   ]
   
