@@ -49,13 +49,24 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Install pnpm in runner stage
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install -g pnpm
+
 # Copy the standalone output from the builder stage
 COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Install production dependencies if package.json exists
+# Use pnpm instead of npm to avoid @next/font issues
 RUN if [ -f "./package.json" ]; then \
-      npm config set registry https://registry.npmmirror.com && \
-      npm install --production --ignore-scripts --legacy-peer-deps; \
+      pnpm config set registry https://registry.npmmirror.com && \
+      pnpm install --prod --ignore-scripts || \
+      (echo "pnpm install failed, trying npm fallback" && \
+       npm config set registry https://registry.npmmirror.com && \
+       sed -i 's/"@next\/font"[^,]*,\?//g' ./package.json && \
+       sed -i 's/,\s*}/}/g' ./package.json && \
+       npm install --production --ignore-scripts --legacy-peer-deps); \
     fi
 
 # The standalone server is located at server.js (if it exists) or start with next start
