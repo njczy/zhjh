@@ -15,7 +15,8 @@ import {
   Calendar,
   CheckCircle,
   AlertCircle,
-  FileText
+  FileText,
+  RotateCcw
 } from "lucide-react"
 import {
   Dialog,
@@ -411,6 +412,7 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
 
         {/* 操作按钮区域 */}
         <div className="flex gap-2 ml-4 items-center">
+
           <div className="text-xs text-gray-600 mr-2 whitespace-nowrap">
             已选择 {selectedProjectIds.length} / {filteredCompiledProjects.length}
           </div>

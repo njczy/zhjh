@@ -854,6 +854,15 @@ function ReserveProjectManagementWithParams() {
             运营管控平台
           </div>
           <div className="flex items-center space-x-4">
+            <Button
+              onClick={handleInitializeData}
+              variant="outline"
+              size="sm"
+              className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              数据初始化
+            </Button>
             <span className="text-sm text-gray-600">
               当前用户: {currentUser.name} ({currentUser.role} - {currentUser.center || currentUser.department})
             </span>
@@ -965,15 +974,6 @@ function ReserveProjectManagementWithParams() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                                  <h2 className="text-2xl font-bold text-gray-800">储备评审</h2>
-                {currentUser.role === "部门领导" && currentUser.department === "发展策划部门" && (
-                  <Button 
-                    onClick={handleInitializeData} 
-                    variant="outline"
-                    className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" /> 数据初始化
-                  </Button>
-                )}
               </div>
               <div className="flex space-x-3">
                 <Link href="/operation-guide">
