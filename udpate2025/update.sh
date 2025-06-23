@@ -5,7 +5,7 @@
 cd "$(dirname "$0")/.."
 
 # 1. 从 Git 仓库拉取最新的代码
-echo "--- 1. 从 GitHub 拉取最新的代码 ---"
+echo "--- 1. 从 Git 仓库拉取最新的代码 ---"
 
 # 检查是否有未提交的更改
 if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -16,17 +16,39 @@ else
     STASHED=false
 fi
 
-# 拉取最新代码
-git fetch origin main
-if [ $? -ne 0 ]; then
-    echo "从 GitHub 获取代码失败，请检查网络连接或 Git 配置。"
-    exit 1
-fi
-
-# 尝试合并，如果失败则重置
-if ! git merge origin/main; then
-    echo "合并失败，正在重置到远程状态..."
-    git reset --hard origin/main
+# 测试网络连接
+echo "检查网络连接..."
+if ! timeout 10 ping -c 2 github.com >/dev/null 2>&1; then
+    echo "⚠️  GitHub 连接失败，尝试备用方案..."
+    
+    # 尝试使用 Gitee 镜像
+    if git remote | grep -q "gitee"; then
+        echo "尝试从 Gitee 镜像拉取..."
+        if git fetch gitee main && git reset --hard gitee/main; then
+            echo "✅ 从 Gitee 镜像更新成功"
+        else
+            echo "❌ Gitee 镜像也失败，跳过代码更新"
+            echo "⚠️  将使用本地现有代码进行部署"
+        fi
+    else
+        echo "❌ 网络连接失败，跳过代码更新"
+        echo "⚠️  将使用本地现有代码进行部署"
+        echo "💡 建议运行 ./udpate2025/network-check.sh 诊断网络问题"
+    fi
+else
+    # 正常的 GitHub 拉取流程
+    echo "拉取最新代码..."
+    if git fetch origin main; then
+        # 尝试合并，如果失败则重置
+        if ! git merge origin/main; then
+            echo "合并失败，正在重置到远程状态..."
+            git reset --hard origin/main
+        fi
+        echo "✅ 代码更新成功"
+    else
+        echo "❌ 从 GitHub 获取代码失败"
+        echo "⚠️  将使用本地现有代码进行部署"
+    fi
 fi
 
 # 如果之前有暂存，询问是否恢复
