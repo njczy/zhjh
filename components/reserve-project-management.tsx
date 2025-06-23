@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileUp, Plus, Edit, Trash, Search, RotateCcw, CalendarIcon, Upload } from "lucide-react"
+import { FileUp, Plus, Edit, Trash, Search, RotateCcw, CalendarIcon, Upload, BookOpen } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
@@ -976,6 +976,11 @@ function ReserveProjectManagementWithParams() {
                 )}
               </div>
               <div className="flex space-x-3">
+                <Link href="/operation-guide">
+                  <Button variant="outline" className="text-purple-600 border-purple-600 hover:bg-purple-50 hover:text-purple-700">
+                    <BookOpen className="mr-2 h-4 w-4" /> 操作说明
+                  </Button>
+                </Link>
                 {(currentUser.role === "中心专职" || currentUser.role === "部门专职") && (
                   <Button onClick={handleAddProject} className="bg-blue-600 hover:bg-blue-700 text-white">
                     <Plus className="mr-2 h-4 w-4" /> 新增项目
