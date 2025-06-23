@@ -55,7 +55,7 @@ COPY --from=builder /app/.next/standalone ./
 # Install production dependencies if package.json exists
 RUN if [ -f "./package.json" ]; then \
       npm config set registry https://registry.npmmirror.com && \
-      npm install --production --ignore-scripts; \
+      npm install --production --ignore-scripts --legacy-peer-deps; \
     fi
 
 # The standalone server is located at server.js (if it exists) or start with next start
