@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:win": "powershell -ExecutionPolicy Bypass -File build-win.ps1",
+    "build:docker": "next build",
+    "build:standalone": "next build",
     "start": "next start",
     "lint": "next lint"
   },

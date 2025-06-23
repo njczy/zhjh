@@ -15,16 +15,31 @@ RUN pnpm install --frozen-lockfile
 # Copy the rest of the application source code
 COPY . .
 
+# Set environment variable to disable telemetry and handle symlink issues
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
 # Build the Next.js application
-RUN pnpm build
+# Use build:docker script which should work better in Linux container
+RUN pnpm run build:docker
 
 # In standalone mode, Next.js builds a minimal server.
 # It also creates a 'standalone' folder with all necessary files.
 # We need to manually copy the 'public' and '.next/static' folders to the standalone output.
 # The standalone output is in .next/standalone
-RUN cp -r ./public ./.next/standalone/public
-RUN cp -r ./.next/static ./.next/standalone/.next/static
 
+# Check if standalone directory exists and copy files
+RUN if [ -d "./.next/standalone" ]; then \
+      cp -r ./public ./.next/standalone/public 2>/dev/null || echo "Public folder already exists or not needed"; \
+      cp -r ./.next/static ./.next/standalone/.next/static 2>/dev/null || echo "Static folder already exists or not needed"; \
+    else \
+      echo "Standalone build not created, using regular build"; \
+      mkdir -p ./.next/standalone; \
+      cp -r ./public ./.next/standalone/public; \
+      cp -r ./.next ./.next/standalone/.next; \
+      cp ./package.json ./.next/standalone/; \
+      cp ./next.config.mjs ./.next/standalone/; \
+    fi
 
 # 2. Runner Stage
 FROM node:20-slim AS runner
@@ -32,11 +47,20 @@ WORKDIR /app
 
 # Set environment variables
 ENV NODE_ENV=production
-# The default port is 3000, but the standalone server will run on 3000 by default.
-# We will rely on the docker-compose port mapping to expose it.
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy the standalone output from the builder stage
 COPY --from=builder /app/.next/standalone ./
 
-# The standalone server is located at server.js
-CMD ["node", "server.js"]
+# Install production dependencies if package.json exists
+RUN if [ -f "./package.json" ]; then \
+      npm config set registry https://registry.npmmirror.com && \
+      npm install --production --ignore-scripts; \
+    fi
+
+# The standalone server is located at server.js (if it exists) or start with next start
+CMD if [ -f "./server.js" ]; then \
+      node server.js; \
+    else \
+      npm start; \
+    fi

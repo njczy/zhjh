@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 生产环境：启用 standalone 输出用于 Docker 部署
   output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
@@ -14,6 +15,9 @@ const nextConfig = {
   // 针对生产环境的优化配置
   poweredByHeader: false,
   compress: true,
+  
+  // 文件追踪配置（从 experimental 移出）
+  outputFileTracingRoot: process.cwd(),
   
   // 实验性功能配置（Next.js 15.x 兼容）
   experimental: {

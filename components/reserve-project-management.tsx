@@ -3,7 +3,7 @@
 import type React from "react"
 import { Eye, ListFilter, CalendarCheck, ChevronLeft, ChevronRight, ClipboardCheck } from "lucide-react" // Declare the Eye variable
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
@@ -211,7 +211,8 @@ const smartSearchMatch = (text: string, searchTerm: string): boolean => {
   return words.some(word => word.includes(lowerSearchTerm))
 }
 
-export default function ReserveProjectManagement() {
+// 包装组件处理 useSearchParams
+function ReserveProjectManagementWithParams() {
   const { currentUser, setCurrentUser } = useUser() // Use user from context
   const searchParams = useSearchParams()
   const [projects, setProjects] = useState<Project[]>([])
@@ -2052,5 +2053,14 @@ export default function ReserveProjectManagement() {
       </Dialog>
 
     </div>
+  )
+}
+
+// 主导出组件，使用 Suspense 包装
+export default function ReserveProjectManagement() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center p-8">加载中...</div>}>
+      <ReserveProjectManagementWithParams />
+    </Suspense>
   )
 }

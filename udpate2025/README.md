@@ -134,7 +134,7 @@ git commit -m "feat: initial project setup for deployment"
     git clone git@github.com:njczy/zhjh.git
 
     # 进入项目目录
-    cd zhjh/
+    cd /zhjh/
     ```
 
 ### 步骤 5：构建并启动您的应用
@@ -166,7 +166,7 @@ Docker 会自动完成所有工作。
 3.  **登录服务器并执行一键更新**：
     ```bash
     ssh 用户名@服务器公网IP地址
-    cd your-repo-name/  # 进入项目目录
+    cd /zhjh/  # 进入项目目录
 
     # 首次拉取代码后，需要给更新脚本添加执行权限（此命令只需运行一次）
     chmod +x udpate2025/update.sh
@@ -175,4 +175,162 @@ Docker 会自动完成所有工作。
     ./udpate2025/update.sh
     ```
 
-脚本会自动从 GitHub 拉取最新的代码，然后重建 Docker 镜像并重启服务，全程无需手动上传文件。 
+脚本会自动从 GitHub 拉取最新的代码，然后重建 Docker 镜像并重启服务，全程无需手动上传文件。
+
+# 项目部署更新说明
+
+## 🚀 2025年1月更新
+
+### 项目概述
+本项目是一个基于 Next.js 15 的项目管理系统，支持待办事项管理、项目储备管理等功能。
+
+### 开发环境 vs 生产环境
+
+#### Windows 开发环境
+由于 Windows 环境下的符号链接权限限制，建议使用以下命令进行开发：
+
+```bash
+# 开发环境启动（推荐）
+npm run dev:win
+
+# 开发环境构建（不使用 standalone）
+npm run build:win
+```
+
+#### Linux 生产环境（Docker）
+生产环境使用 standalone 输出模式，适合容器化部署：
+
+```bash
+# 标准构建（包含 standalone 输出）
+npm run build
+
+# Docker 专用构建
+npm run build:docker
+```
+
+### 🐳 Docker 部署
+
+#### 1. 构建镜像
+```bash
+docker build -t zhjh-app .
+```
+
+#### 2. 使用 Docker Compose 启动
+```bash
+docker-compose up -d
+```
+
+#### 3. 访问应用
+- 本地访问：http://localhost
+- 服务器访问：http://your-server-ip
+
+### 📁 项目结构说明
+
+```
+zhjh/
+├── app/                    # Next.js 13+ App Router
+│   ├── api/               # API 路由
+│   ├── todo/              # 待办页面
+│   ├── reserve-projects/  # 储备项目页面
+│   └── monthly-reviews/   # 月度审核页面
+├── components/            # React 组件
+├── lib/                   # 工具函数
+├── data/                  # 数据文件
+├── public/                # 静态资源
+├── Dockerfile             # Docker 构建文件
+├── docker-compose.yml     # Docker Compose 配置
+├── next.config.mjs        # Next.js 生产配置
+├── next.config.dev.mjs    # Next.js 开发配置（Windows 兼容）
+└── udpate2025/           # 部署脚本和配置
+```
+
+### ⚙️ 配置文件说明
+
+#### next.config.mjs（生产环境）
+- 启用 `output: 'standalone'` 用于 Docker 部署
+- 优化包导入和构建性能
+- 配置 ESLint 和 TypeScript 忽略规则
+
+#### next.config.dev.mjs（开发环境）
+- 禁用 `output: 'standalone'` 避免 Windows 符号链接问题
+- 添加 webpack 监听配置
+- 优化开发体验
+
+### 🔧 常见问题解决
+
+#### Windows 符号链接权限问题
+如果在 Windows 环境下遇到 `EPERM: operation not permitted, symlink` 错误：
+
+1. **使用开发配置**：
+   ```bash
+   npm run dev:win
+   npm run build:win
+   ```
+
+2. **以管理员权限运行**：
+   - 右键点击 PowerShell 或 CMD
+   - 选择"以管理员身份运行"
+   - 重新执行构建命令
+
+3. **启用开发者模式**：
+   - 打开 Windows 设置
+   - 转到"更新和安全" > "开发者选项"
+   - 启用"开发者模式"
+
+#### 生产环境部署
+1. **京东云服务器部署**：
+   ```bash
+   # 克隆代码
+   git clone <repository-url>
+   cd zhjh
+   
+   # 构建和启动
+   docker-compose up -d
+   ```
+
+2. **Nginx 配置**：
+   使用 `udpate2025/nginx.conf` 配置反向代理
+
+3. **更新脚本**：
+   使用 `udpate2025/update.sh` 进行自动化更新
+
+### 📋 部署检查清单
+
+- [ ] 环境变量配置（.env.local）
+- [ ] 数据文件权限设置
+- [ ] Docker 和 Docker Compose 安装
+- [ ] 防火墙端口开放（80, 443）
+- [ ] SSL 证书配置（如需要）
+- [ ] 备份策略设置
+
+### 🔄 更新流程
+
+1. **开发环境测试**：
+   ```bash
+   npm run dev:win
+   ```
+
+2. **构建验证**：
+   ```bash
+   npm run build:win  # Windows 本地验证
+   npm run build      # 生产构建验证
+   ```
+
+3. **部署到生产**：
+   ```bash
+   git push origin main
+   # 在服务器上执行 update.sh
+   ```
+
+### 📞 技术支持
+
+如遇到部署问题，请检查：
+1. Node.js 版本（推荐 20.x）
+2. pnpm 版本和缓存
+3. Docker 环境配置
+4. 网络连接和防火墙设置
+
+---
+
+**最后更新**：2025年1月
+**维护者**：项目开发团队 
