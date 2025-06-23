@@ -1,17 +1,19 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CheckCircle, XCircle, Clock, FileText, AlertTriangle, TrendingUp, Calendar, Folder } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, FileText, AlertTriangle, TrendingUp, Calendar, Folder, ExternalLink } from 'lucide-react'
 import { useUser } from "@/contexts/UserContext"
 import { getTodoItemsAction, processTodoItemAction, getApprovalReportByIdAction, getApprovalByIdAction, getProjectByIdAction } from "@/app/actions"
 import type { TodoItem, ApprovalReport, Approval, Project } from "@/lib/data"
 
 export default function TodoList() {
+  const router = useRouter()
   const { currentUser } = useUser()
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -459,7 +461,21 @@ export default function TodoList() {
                       {relatedApproval.status}
                     </span>
                   </div>
-                  <div><span className="font-medium">项目描述:</span> {relatedProject.description}</div>
+                  <div className="flex items-center justify-between">
+                    <div><span className="font-medium">项目描述:</span> {relatedProject.description}</div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push(`/reserve-projects?project=${relatedProject.id}`)
+                      }}
+                      className="ml-2 text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      查看详情
+                    </Button>
+                  </div>
                 </div>
               </div>
 

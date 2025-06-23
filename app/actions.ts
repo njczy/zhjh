@@ -84,6 +84,9 @@ export async function getProjectsAction(currentUser: User): Promise<Project[]> {
       return allProjects.filter((p) => p.center !== "" && p.department === "")
     }
     return allProjects.filter((p) => p.department === currentUser.department)
+  } else if (currentUser.role === "分管院领导") {
+    // 分管院领导可以查看所有储备项目
+    return allProjects
   }
   // Default: if role is not recognized or has no specific view permission, return empty
   return []
@@ -655,35 +658,13 @@ export async function processTodoItemAction(
         return { success: true, message: "已知悉驳回通知" }
       }
       
-      // 检查是否是主流程确认（通过title判断）
-      if (todo.title.includes("主流程确认")) {
-        // 这是主流程确认，检查主流程是否完成
-        if (action === "confirm") {
-          await checkMainWorkflowAndAdvance(todo.relatedId)
-          return { success: true, message: "主流程确认成功" }
-        } else {
-          return { success: true, message: "已拒绝主流程确认" }
-        }
+      // 处理顺序确认流程
+      if (action === "confirm") {
+        await checkMainWorkflowAndAdvance(todo.relatedId)
+        return { success: true, message: "确认成功" }
+      } else {
+        return { success: true, message: "已拒绝确认" }
       }
-      
-      // 处理子流程的批复报告确认
-      const confirmations = await getConfirmationsByReportId(todo.relatedId)
-      const userConfirmation = confirmations.find(c => c.userId === todo.assignedTo)
-      
-      if (userConfirmation) {
-        const newStatus = action === "confirm" ? "已确认" : "已拒绝"
-        await updateApprovalReportConfirmation(userConfirmation.id, {
-          status: newStatus,
-          comments: comments
-        })
-        
-        // 检查是否所有人都确认了，如果是则推进到主流程
-        if (action === "confirm") {
-          await checkAndAdvanceApprovalWorkflow(todo.relatedId)
-        }
-      }
-      
-      return { success: true, message: action === "confirm" ? "确认成功" : "已拒绝确认" }
       
     } else if (todo.type === "approval_report_approve") {
       // 处理分管院领导审批

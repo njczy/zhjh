@@ -502,7 +502,7 @@ export default function MonthlyReviewsEmbedded() {
             id="include-tax"
             checked={includeTax}
             onCheckedChange={(checked) => setIncludeTax(checked === true)}
-            className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
+            className="data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
           />
           <Label htmlFor="include-tax" className="text-sm text-gray-700">
             是否含税
@@ -511,7 +511,7 @@ export default function MonthlyReviewsEmbedded() {
         
         <div className="flex items-end space-x-2">
           <Button
-            className="bg-teal-600 hover:bg-teal-700 text-white"
+            className="bg-teal-500 hover:bg-teal-600 text-white"
             onClick={() => {
               // 查询逻辑
             }}
@@ -535,7 +535,7 @@ export default function MonthlyReviewsEmbedded() {
           {canInitiateReview && (
             <Button
               onClick={() => setIsInitiateReviewModalOpen(true)}
-              className="bg-teal-600 hover:bg-teal-700 text-white"
+              className="bg-teal-500 hover:bg-teal-600 text-white"
             >
               月度评审发起
             </Button>
@@ -548,7 +548,7 @@ export default function MonthlyReviewsEmbedded() {
         <ScrollArea className="flex-1 w-full">
           <Table className="w-full">
             <TableHeader>
-              <TableRow className="bg-teal-600 text-white hover:bg-teal-600">
+              <TableRow className="bg-teal-500 text-white hover:bg-teal-500">
                 <TableHead className="text-white text-center font-medium w-[40px]"></TableHead>
                 <TableHead className="text-white text-left font-medium w-[180px] whitespace-nowrap">会议编号</TableHead>
                 <TableHead className="text-white text-center font-medium w-[70px] whitespace-nowrap">项目总数量</TableHead>
@@ -953,7 +953,7 @@ export default function MonthlyReviewsEmbedded() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-green-700 mb-2 block flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                <span className="w-2 h-2 bg-teal-500 rounded-full mr-2"></span>
                 会议开始时间
               </Label>
               <div className="space-y-3">
@@ -1083,7 +1083,7 @@ export default function MonthlyReviewsEmbedded() {
                   <span>行数：{meetingMinutesContent.split('\n').length}</span>
                   {isEditing && (
                     <span className="text-green-600 flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                      <span className="w-2 h-2 bg-teal-500 rounded-full mr-1 animate-pulse"></span>
                       可编辑
                     </span>
                   )}
@@ -1534,11 +1534,11 @@ export default function MonthlyReviewsEmbedded() {
                   <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
+                        <div className="w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
                         <span className="text-sm font-medium">已选择 {selectedApprovalProjects.length} 个项目</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
+                        <div className="w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
                         <span className="text-sm font-medium">
                           {approvalTemplateType === "adjustment2024" ? `${new Date().getFullYear()}年已下达项目调整评审意见汇总表` :
                            approvalTemplateType === "newProject2024" ? `${new Date().getFullYear()}年新增项目评审意见汇总表` :
@@ -1763,7 +1763,7 @@ export default function MonthlyReviewsEmbedded() {
                                     <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold mr-4 shadow-md">
                                       项目 {index + 1}
                                     </div>
-                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 rounded-full border-2 border-white"></div>
                                   </div>
                                   <h3 className="text-xl font-bold text-gray-800 flex-1">{review.projectName}</h3>
                                   <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">
@@ -1810,7 +1810,7 @@ export default function MonthlyReviewsEmbedded() {
                                   </div>
                                   <div className="space-y-2">
                                     <label className="flex items-center text-sm font-semibold text-gray-700">
-                                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                      <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
                                       评审结论
                                     </label>
                                     <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-lg border border-green-200 text-sm font-semibold text-center shadow-sm">
@@ -1840,7 +1840,7 @@ export default function MonthlyReviewsEmbedded() {
                                     </div>
                                     <div className="space-y-2">
                                       <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                        <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
                                         调整后总收入 (万元)
                                       </label>
                                       <Input className="w-full border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all duration-200" placeholder="请输入金额"

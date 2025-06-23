@@ -5,6 +5,7 @@ import { Eye, ListFilter, CalendarCheck, ChevronLeft, ChevronRight, ClipboardChe
 
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
+import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -212,6 +213,7 @@ const smartSearchMatch = (text: string, searchTerm: string): boolean => {
 
 export default function ReserveProjectManagement() {
   const { currentUser, setCurrentUser } = useUser() // Use user from context
+  const searchParams = useSearchParams()
   const [projects, setProjects] = useState<Project[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
@@ -313,6 +315,17 @@ export default function ReserveProjectManagement() {
   useEffect(() => {
     fetchProjects()
   }, [currentUser]) // Re-fetch projects when currentUser changes
+
+  // Handle URL parameters for direct project access
+  useEffect(() => {
+    const projectId = searchParams.get('project')
+    if (projectId && projects.length > 0) {
+      const targetProject = projects.find(project => project.id === projectId)
+      if (targetProject) {
+        handleViewProject(targetProject)
+      }
+    }
+  }, [searchParams, projects])
 
   // Memoized filtered projects
   const filteredProjects = useMemo(() => {
@@ -720,13 +733,13 @@ export default function ReserveProjectManagement() {
     }
   }
 
-  // 权限控制：发展策划部门和院领导办公室角色不做限制，中心部门的人看不到部分页签
-  const canViewMonthlyReviews = currentUser.department === "发展策划部门" || currentUser.department === "院领导办公室"
+  // 权限控制：发展策划部门、院领导办公室和分管院领导角色不做限制，中心部门的人看不到部分页签
+  const canViewMonthlyReviews = currentUser.department === "发展策划部门" || currentUser.department === "院领导办公室" || currentUser.role === "分管院领导"
   
-  const canViewComprehensivePlan = currentUser.department === "发展策划部门" || currentUser.department === "院领导办公室"
+  const canViewComprehensivePlan = currentUser.department === "发展策划部门" || currentUser.department === "院领导办公室" || currentUser.role === "分管院领导"
   
   const canViewApprovals = 
-    currentUser.role === "中心领导" || currentUser.role === "部门领导"
+    currentUser.role === "中心领导" || currentUser.role === "部门领导" || currentUser.role === "分管院领导"
 
   // Tab configuration - moved after permission definitions
   const tabConfig = {

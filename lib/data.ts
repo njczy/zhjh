@@ -249,29 +249,32 @@ export function getProjectAffiliationDisplay(project: Project): string {
 
 
 
+import { pinyin } from 'pinyin-pro'
+
 // 通用的项目编码生成函数
+// 用于确保编码唯一性的计数器
+let projectCodeCounter = 0
+
 export function generateProjectCode(projectName: string): string {
   // 提取项目名称的缩写（去掉"项目"二字）
   const cleanName = projectName.replace(/项目$/g, '') // 移除末尾的"项目"
   
-  // 提取中文字符的首字母作为缩写
-  const chineseChars = cleanName.match(/[\u4e00-\u9fa5]/g) || []
-  const abbreviation = chineseChars.map(char => {
-    // 简化的中文首字母映射
-    const firstLetterMap: { [key: string]: string } = {
-      '智': 'Z', '能': 'N', '化': 'H',
-      '创': 'C', '新': 'X', '研': 'Y', '发': 'F',
-      '技': 'J', '术': 'S', '升': 'S', '级': 'J',
-      '基': 'J', '础': 'C', '设': 'S', '施': 'S'
-    }
-    return firstLetterMap[char] || char.toUpperCase()
-  }).join('')
+  // 使用 pinyin-pro 库将中文转换为拼音首字母缩写（大写）
+  const abbreviation = pinyin(cleanName, { 
+    pattern: 'first', // 只取首字母
+    toneType: 'none', // 不要声调
+    type: 'array' // 返回数组
+  }).join('').toUpperCase()
   
   // 获取当前时间的时分秒
   const now = new Date()
   const timeString = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`
   
-  return `${abbreviation}${timeString}`
+  // 添加递增计数器确保唯一性（2位数字，从01开始）
+  projectCodeCounter = (projectCodeCounter % 99) + 1
+  const counterString = projectCodeCounter.toString().padStart(2, '0')
+  
+  return `${abbreviation}${timeString}${counterString}`
 }
 
 // 模拟数据生成函数
@@ -374,7 +377,7 @@ const generateMockProjects = (): Project[] => {
       description,
       owner: ownerUser.name,
       createdAt,
-      version: `V${Math.floor(currentProjectId / 4) + 1}`, // 每4个项目递增版本号
+      version: "V1", // 初始化数据的储备项目版本默认为V1
       
       // 详细字段
       projectType: PROJECT_TYPES[currentProjectId % PROJECT_TYPES.length],
@@ -398,43 +401,32 @@ const generateMockProjects = (): Project[] => {
   
   // 为每个中心专职用户生成一条编制状态的项目数据
   const projectTemplates = [
-    "智能化监测系统项目",
-    "创新研发平台建设", 
-    "技术升级改造项目",
-    "基础设施完善工程"
+    ["智能化监测系统项目", "创新研发平台建设", "技术升级改造项目"],
+    ["数据分析平台建设", "质量管理系统升级", "设备运维优化项目"],
+    ["安全监控系统项目", "能耗管理平台建设", "流程自动化改造"],
+    ["信息化基础设施项目", "人员培训体系建设", "标准化管理项目"]
   ]
   
-  // 为每个中心专职用户生成多个不同状态的项目
+  // 为每个中心专职用户生成2个编制状态的项目
   centerSpecialists.forEach((specialist, specialistIndex) => {
-    const templateIndex = specialistIndex % projectTemplates.length
-    const baseProjectName = projectTemplates[templateIndex]
+    const templates = projectTemplates[specialistIndex % projectTemplates.length]
     
-    // 为每个专职生成3个项目：1个编制状态，1个批复状态，1个下达状态
-    const projectStatuses: ProjectStatus[] = ["编制", "批复", "下达"]
-    
-    projectStatuses.forEach((status, statusIndex) => {
-      const projectName = `${baseProjectName}${statusIndex > 0 ? `(${status})` : ""}`
+    // 为每个专职生成2个编制状态的项目
+    for (let i = 0; i < 2; i++) {
+      // 使用不同的项目名称，确保每个项目都有独特的名称
+      const projectName = templates[i]
       
       const project = createProject(
         projectName,
         specialist,
-        status
+        "编制" // 只生成编制状态的项目
       )
       
-      // 根据状态设置相应属性
-      if (status === "编制") {
-        // 编制状态的项目不设置为已提交审批
-        project.isSubmittedForApproval = false
-      } else if (status === "批复") {
-        // 批复状态的项目已通过审批
-        project.isSubmittedForApproval = true
-      } else if (status === "下达") {
-        // 下达状态的项目已完成所有流程
-        project.isSubmittedForApproval = true
-      }
+      // 编制状态的项目不设置为已提交审批
+      project.isSubmittedForApproval = false
       
       generatedProjects.push(project)
-    })
+    }
   })
 
   return generatedProjects
@@ -532,6 +524,9 @@ export const regenerateProjects = () => {
 // 数据初始化函数 - 恢复所有模拟数据到初始状态
 export const initializeData = () => {
   console.log('Initializing data...')
+  
+  // 重置项目编码计数器，确保每次初始化都从头开始
+  projectCodeCounter = 0
   
   // 重新生成项目数据
   projects = generateMockProjects()
@@ -1277,49 +1272,25 @@ export const startApprovalReportWorkflow = async (reportId: string): Promise<voi
     
     console.log(`启动批复报告审批流程: ${reportId}`)
     
-    // 获取项目相关用户
-    const relatedUsers = await getProjectRelatedUsers(report.selectedProjects)
+    // 直接进入主流程的顺序确认，跳过子流程
+    // 更新报告状态为"确认中"，表示进入主流程
+    await updateApprovalReport(reportId, { status: "确认中" })
     
-    if (relatedUsers.length === 0) {
-      console.warn(`批复报告 ${reportId} 没有找到相关用户，跳过创建确认记录`)
-      // 即使没有相关用户，也更新报告状态
-      await updateApprovalReport(reportId, { status: "待确认" })
-      return
+    // 主流程：只为第一个角色（中心专职）创建待办事项
+    const centerSpecialist = mockUsers.find(u => u.role === "中心专职")
+    if (centerSpecialist) {
+      await addTodoItem({
+        type: "approval_report_confirm",
+        title: `批复报告确认：${report.templateName}`,
+        description: `请作为中心专职确认批复报告内容（第1步）`,
+        relatedId: reportId,
+        assignedTo: centerSpecialist.id,
+        assignedBy: "系统自动",
+        status: "待处理",
+        priority: "高"
+      })
+      console.log(`为中心专职创建第1步待办事项: ${reportId}`)
     }
-    
-    console.log(`为批复报告 ${reportId} 创建 ${relatedUsers.length} 个确认记录`)
-    
-    // 为每个相关用户创建确认记录
-    for (const user of relatedUsers) {
-      try {
-        await addApprovalReportConfirmation({
-          reportId: reportId,
-          userId: user.id,
-          userName: user.name,
-          status: "待确认"
-        })
-        
-        // 创建待办事项
-        await addTodoItem({
-          type: "approval_report_confirm",
-          title: `批复报告确认：${report.templateName}`,
-          description: `请确认批复报告中涉及您负责的项目信息是否准确`,
-          relatedId: reportId,
-          assignedTo: user.id,
-          assignedBy: report.submittedBy,
-          status: "待处理"
-        })
-        
-        console.log(`为用户 ${user.name} 创建了确认记录和待办事项`)
-      } catch (error) {
-        console.error(`为用户 ${user.name} 创建确认记录失败:`, error)
-        // 继续处理其他用户，不中断整个流程
-      }
-    }
-    
-    // 更新报告状态为"待确认"
-    await updateApprovalReport(reportId, { status: "待确认" })
-    console.log(`批复报告 ${reportId} 状态已更新为"待确认"`)
     
   } catch (error) {
     console.error(`启动批复报告审批流程失败 (${reportId}):`, error)
@@ -1327,44 +1298,10 @@ export const startApprovalReportWorkflow = async (reportId: string): Promise<voi
   }
 }
 
-// 检查所有确认是否完成，如果完成则进入主流程
+// 检查主流程是否完成并推进到下一步（重命名为更准确的函数名）
 export const checkAndAdvanceApprovalWorkflow = async (reportId: string): Promise<void> => {
-  try {
-    const confirmations = await getConfirmationsByReportId(reportId)
-    const allConfirmed = confirmations.every(conf => conf.status === "已确认")
-    
-    if (allConfirmed && confirmations.length > 0) {
-      // 子流程完成：所有项目相关角色都确认了，进入主流程
-      console.log(`子流程完成，开始主流程: ${reportId}`)
-      
-      const report = (await getApprovalReports()).find(r => r.id === reportId)
-      if (!report) {
-        throw new Error('批复报告不存在')
-      }
-      
-      // 更新报告状态为"确认中"，表示进入主流程
-      await updateApprovalReport(reportId, { status: "确认中" })
-      
-      // 主流程：只为第一个角色（中心专职）创建待办事项
-      const centerSpecialist = mockUsers.find(u => u.role === "中心专职")
-      if (centerSpecialist) {
-        await addTodoItem({
-          type: "approval_report_confirm",
-          title: `批复报告主流程确认：${report.templateName}`,
-          description: `项目相关角色已完成确认，请作为中心专职进行主流程确认（第1步）`,
-          relatedId: reportId,
-          assignedTo: centerSpecialist.id,
-          assignedBy: "系统自动",
-          status: "待处理",
-          priority: "高"
-        })
-        console.log(`为中心专职创建主流程第1步待办事项: ${reportId}`)
-      }
-    }
-  } catch (error) {
-    console.error('Failed to check and advance approval workflow:', error)
-    throw error
-  }
+  // 这个函数现在只是为了保持兼容性，实际逻辑转移到 checkMainWorkflowAndAdvance
+  await checkMainWorkflowAndAdvance(reportId)
 }
 
 // 检查主流程顺序确认并推进到下一步
@@ -1375,13 +1312,12 @@ export const checkMainWorkflowAndAdvance = async (reportId: string): Promise<voi
       throw new Error('批复报告不存在')
     }
     
-    // 获取所有相关的主流程待办事项
+    // 获取所有相关的确认待办事项
     const todoItems = await getTodoItems()
     const mainWorkflowTodos = todoItems.filter(todo => 
       todo.relatedId === reportId && 
       todo.type === "approval_report_confirm" && 
-      todo.assignedBy === "系统自动" &&
-      todo.title.includes("主流程确认")
+      todo.assignedBy === "系统自动"
     )
     
     // 检查当前完成的步骤
@@ -1397,15 +1333,15 @@ export const checkMainWorkflowAndAdvance = async (reportId: string): Promise<voi
       if (centerLeader) {
         await addTodoItem({
           type: "approval_report_confirm",
-          title: `批复报告主流程确认：${report.templateName}`,
-          description: `中心专职已确认，请作为中心领导进行主流程确认（第2步）`,
+          title: `批复报告确认：${report.templateName}`,
+          description: `中心专职已确认，请作为中心领导确认批复报告内容（第2步）`,
           relatedId: reportId,
           assignedTo: centerLeader.id,
           assignedBy: "系统自动",
           status: "待处理",
           priority: "高"
         })
-        console.log(`为中心领导创建主流程第2步待办事项: ${reportId}`)
+        console.log(`为中心领导创建第2步待办事项: ${reportId}`)
       }
     } else if (currentStep === 2) {
       // 第2步（中心领导）完成，创建第3步（发展策划部专职）
@@ -1413,15 +1349,15 @@ export const checkMainWorkflowAndAdvance = async (reportId: string): Promise<voi
       if (deptSpecialist) {
         await addTodoItem({
           type: "approval_report_confirm",
-          title: `批复报告主流程确认：${report.templateName}`,
-          description: `中心专职、中心领导已确认，请作为发展策划部专职进行主流程确认（第3步）`,
+          title: `批复报告确认：${report.templateName}`,
+          description: `中心专职、中心领导已确认，请作为发展策划部专职确认批复报告内容（第3步）`,
           relatedId: reportId,
           assignedTo: deptSpecialist.id,
           assignedBy: "系统自动",
           status: "待处理",
           priority: "高"
         })
-        console.log(`为发展策划部专职创建主流程第3步待办事项: ${reportId}`)
+        console.log(`为发展策划部专职创建第3步待办事项: ${reportId}`)
       }
     } else if (currentStep === 3) {
       // 第3步（发展策划部专职）完成，提交给分管院领导
@@ -1431,24 +1367,24 @@ export const checkMainWorkflowAndAdvance = async (reportId: string): Promise<voi
       }
       
       // 创建院领导的最终审批待办
-      await addTodoItem({
-        type: "approval_report_approve",
-        title: `批复报告最终审批：${report.templateName}`,
-        description: `主流程三步确认已完成，请进行最终审批决策`,
-        relatedId: reportId,
-        assignedTo: instituteLeader.id,
-        assignedBy: "系统自动",
-        status: "待处理",
-        priority: "高"
-      })
-      
-      // 更新报告状态为"待审批"
-      await updateApprovalReport(reportId, { 
-        status: "待审批",
-        finalApprover: instituteLeader.id
-      })
-      
-      console.log(`主流程完成，已提交给分管院领导审批: ${reportId}`)
+              await addTodoItem({
+          type: "approval_report_approve",
+          title: `批复报告最终审批：${report.templateName}`,
+          description: `三步确认已完成，请进行最终审批决策`,
+          relatedId: reportId,
+          assignedTo: instituteLeader.id,
+          assignedBy: "系统自动",
+          status: "待处理",
+          priority: "高"
+        })
+        
+        // 更新报告状态为"待审批"
+        await updateApprovalReport(reportId, { 
+          status: "待审批",
+          finalApprover: instituteLeader.id
+        })
+        
+        console.log(`三步确认完成，已提交给分管院领导审批: ${reportId}`)
     }
   } catch (error) {
     console.error('Failed to check main workflow and advance:', error)

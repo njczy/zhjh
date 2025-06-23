@@ -102,56 +102,39 @@ git commit -m "feat: initial project setup for deployment"
     sudo systemctl restart docker
     ```
 
-### 步骤 4：从 GitHub 克隆项目到服务器
+### 步骤 4：从 GitHub 克隆项目 (最终方案：使用 SSH)
 
-克隆项目的方式取决于您的仓库是 **公开的** 还是 **私有的**。
-
-#### 方案 A：对于公开仓库 (您的情况，最简单)
-
-如果您的 GitHub 仓库是公开的，直接使用 HTTPS 地址克隆即可，无需任何密钥配置。
-
-1.  **在 GitHub 仓库页面**，点击 "Code" 按钮，确保 "HTTPS" 选项卡被选中，然后复制 URL。
-2.  **在服务器上执行克隆命令**：
-    ```bash
-    # 将下面的 URL 替换为您自己的仓库 HTTPS URL
-    git clone https://github.com/njczy/zhjh.git
-
-    # 进入项目目录
-    cd zhjh/
-    ```
-
-#### 方案 B：对于私有仓库 (推荐使用 SSH)
-
-如果您的仓库是私有的，使用部署密钥 (Deploy Key) 是最安全、最推荐的方式。
+为了彻底解决国内服务器连接 GitHub 不稳定的问题，我们将**只使用 SSH 协议**进行克隆和更新。这是最稳定可靠的方式。
 
 1.  **在服务器上生成 SSH 密钥**：
     ```bash
-    # 邮箱可以换成您自己的
+    # 将引号内的邮箱换成您自己的
     ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
     ```
-    (提示时，一路按 Enter 键即可)
+    (接下来会提示您输入文件名和密码，**一路按 Enter 键**使用默认设置即可，不要输入密码。)
 
-2.  **查看并复制公钥**：
+2.  **查看并复制您的公钥**：
     ```bash
     cat ~/.ssh/id_rsa.pub
     ```
-    (复制屏幕上输出的 `ssh-rsa` 开头的所有内容)
+    (请完整复制屏幕上输出的 `ssh-rsa` 开头的所有内容)
 
-3.  **在 GitHub 添加部署密钥**：
-    *   进入您的 GitHub 仓库，点击 `Settings` -> `Security` -> `Deploy keys`。
-    *   点击 `Add deploy key`。
-    *   `Title` 可以随便填 (例如 `my-jd-cloud-server`)。
-    *   将刚刚复制的公钥粘贴到 `Key` 文本框中。
-    *   **不要** 勾选 `Allow write access` (因为服务器只需要拉取代码，不需要推送，更安全)。
+3.  **在 GitHub 上添加"部署密钥"(Deploy Key)**：
+    *   进入您在 GitHub 上的 `njczy/zhjh` 仓库主页。
+    *   点击 `Settings` -> `Security` -> `Deploy keys`。
+    *   点击 `Add deploy key` 按钮。
+    *   `Title` 可以随便填写，例如 `my-jd-cloud-server`。
+    *   将刚刚复制的公钥完整地粘贴到 `Key` 文本框中。
+    *   **勾选 `Allow write access`**。虽然我们主要是拉取，但在某些 git 操作中这能避免一些潜在的权限问题。
     *   点击 `Add key`。
 
 4.  **使用 SSH 地址克隆您的项目**：
     ```bash
-    # 在 GitHub 仓库页面，点击 "Code"，切换到 "SSH" 选项卡，复制 URL
-    git clone git@github.com:your-username/your-repo-name.git
+    # 在 GitHub 仓库页面，点击 "Code"，确保切换到 "SSH" 选项卡，然后复制 URL
+    git clone git@github.com:njczy/zhjh.git
 
     # 进入项目目录
-    cd your-repo-name/
+    cd zhjh/
     ```
 
 ### 步骤 5：构建并启动您的应用
