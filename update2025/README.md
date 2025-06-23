@@ -148,7 +148,7 @@ Docker 会自动完成所有工作。
 
 ### 步骤 6：(推荐) 配置 Nginx 反向代理与 HTTPS
 
-这一步与之前的指南完全相同，您可以直接参考。配置时，请确保使用的是克隆下来的新项目目录中的 `udpate2025/nginx.conf` 文件。
+这一步与之前的指南完全相同，您可以直接参考。配置时，请确保使用的是克隆下来的新项目目录中的 `update2025/nginx.conf` 文件。
 
 ---
 
@@ -169,10 +169,10 @@ Docker 会自动完成所有工作。
     cd /zhjh/  # 进入项目目录
 
     # 首次拉取代码后，需要给更新脚本添加执行权限（此命令只需运行一次）
-    chmod +x udpate2025/update.sh
+    chmod +x update2025/update.sh
 
     # 之后，每次更新都只需运行此脚本
-    ./udpate2025/update.sh
+    ./update2025/update.sh
     ```
 
 脚本会自动从 GitHub 拉取最新的代码，然后重建 Docker 镜像并重启服务，全程无需手动上传文件。
@@ -241,7 +241,7 @@ zhjh/
 ├── docker-compose.yml     # Docker Compose 配置
 ├── next.config.mjs        # Next.js 生产配置
 ├── next.config.dev.mjs    # Next.js 开发配置（Windows 兼容）
-└── udpate2025/           # 部署脚本和配置
+└── update2025/           # 部署脚本和配置
 ```
 
 ### ⚙️ 配置文件说明
@@ -289,10 +289,10 @@ zhjh/
    ```
 
 2. **Nginx 配置**：
-   使用 `udpate2025/nginx.conf` 配置反向代理
+   使用 `update2025/nginx.conf` 配置反向代理
 
 3. **更新脚本**：
-   使用 `udpate2025/update.sh` 进行自动化更新
+   使用 `update2025/update.sh` 进行自动化更新
 
 ### 📋 部署检查清单
 
@@ -329,6 +329,40 @@ zhjh/
 2. pnpm 版本和缓存
 3. Docker 环境配置
 4. 网络连接和防火墙设置
+
+## 🚀 新增更新脚本说明
+
+### update.sh - 完整更新脚本
+- 自动检测 Git 协议（SSH/HTTPS）
+- 智能网络连接检测和备用方案
+- 完整的 Docker 构建和部署流程
+- 错误处理和状态检查
+
+### quick-update.sh - 快速更新脚本
+- 简化的更新流程，适合日常开发
+- 快速拉取代码并重新部署
+- 最小化停机时间
+
+### 使用建议
+
+**首次部署或重大更新**：
+```bash
+./update2025/update.sh
+```
+
+**日常开发更新**：
+```bash
+./update2025/quick-update.sh
+```
+
+**手动控制**：
+```bash
+# 仅拉取代码
+git pull origin main
+
+# 仅重新部署
+docker-compose up -d --build
+```
 
 ---
 

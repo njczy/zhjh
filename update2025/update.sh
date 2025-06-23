@@ -43,7 +43,7 @@ if [[ $CURRENT_URL == git@github.com:* ]]; then
         fi
     else
         echo "❌ SSH 连接失败"
-        echo "💡 建议运行 ./udpate2025/setup-ssh.sh 配置 SSH 连接"
+        echo "💡 建议运行 ./update2025/setup-ssh.sh 配置 SSH 连接"
         echo "⚠️  将使用本地现有代码进行部署"
     fi
     
@@ -66,7 +66,7 @@ elif [[ $CURRENT_URL == https://github.com/* ]]; then
         else
             echo "❌ 网络连接失败，跳过代码更新"
             echo "⚠️  将使用本地现有代码进行部署"
-            echo "💡 建议运行 ./udpate2025/setup-ssh.sh 配置 SSH 连接"
+            echo "💡 建议运行 ./update2025/setup-ssh.sh 配置 SSH 连接"
         fi
     else
         # 正常的 GitHub HTTPS 拉取流程
@@ -80,13 +80,13 @@ elif [[ $CURRENT_URL == https://github.com/* ]]; then
             echo "✅ 代码更新成功"
         else
             echo "❌ 从 GitHub 获取代码失败"
-            echo "💡 建议运行 ./udpate2025/setup-ssh.sh 配置 SSH 连接"
+            echo "💡 建议运行 ./update2025/setup-ssh.sh 配置 SSH 连接"
             echo "⚠️  将使用本地现有代码进行部署"
         fi
     fi
 else
     echo "⚠️  未识别的仓库 URL 格式"
-    echo "💡 建议运行 ./udpate2025/setup-ssh.sh 配置 SSH 连接"
+    echo "💡 建议运行 ./update2025/setup-ssh.sh 配置 SSH 连接"
     echo "⚠️  将使用本地现有代码进行部署"
 fi
 
@@ -100,11 +100,17 @@ echo "--- 2. 构建和重启 Docker 容器 ---"
 
 # 停止现有容器
 echo "停止现有容器..."
-sudo docker compose down
+if command -v docker-compose >/dev/null 2>&1; then
+    sudo docker-compose down
+    COMPOSE_CMD="docker-compose"
+else
+    sudo docker compose down
+    COMPOSE_CMD="docker compose"
+fi
 
 # 构建新镜像
 echo "构建新的 Docker 镜像..."
-sudo docker compose build --no-cache
+sudo $COMPOSE_CMD build --no-cache
 if [ $? -ne 0 ]; then
     echo "❌ Docker 构建失败，请检查 Dockerfile 或构建日志。"
     exit 1
@@ -112,7 +118,7 @@ fi
 
 # 启动容器
 echo "启动 Docker 容器..."
-sudo docker compose up -d
+sudo $COMPOSE_CMD up -d
 if [ $? -ne 0 ]; then
     echo "❌ 启动 Docker 容器失败，请检查 Docker 配置。"
     exit 1
@@ -120,8 +126,12 @@ fi
 
 # 等待容器启动并检查状态
 echo "等待容器启动..."
-sleep 5
-sudo docker compose ps
+sleep 10
+sudo $COMPOSE_CMD ps
+
+# 显示启动日志
+echo "--- 容器启动日志 ---"
+sudo $COMPOSE_CMD logs --tail=20 app
 
 # 3. 清理无用的 Docker 镜像和缓存
 echo "--- 3. 清理 Docker 资源 ---"
@@ -131,5 +141,9 @@ sudo docker builder prune -f
 
 echo "✅ 项目更新完成！"
 echo "📊 容器状态："
-sudo docker compose ps
-echo "🌐 应用应该可以通过 http://your-server-ip 访问" 
+sudo $COMPOSE_CMD ps
+echo "🌐 应用应该可以通过 http://your-server-ip 访问"
+echo "📋 常用管理命令："
+echo "  查看日志: sudo $COMPOSE_CMD logs -f app"
+echo "  重启服务: sudo $COMPOSE_CMD restart app"
+echo "  停止服务: sudo $COMPOSE_CMD down" 
