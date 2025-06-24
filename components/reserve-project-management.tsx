@@ -46,6 +46,7 @@ import AddProjectReserve from "./add-project-reserve"
 import ProjectDetailView from "./project-detail-view"
 import TodoList from "./todo-list"
 import ComprehensivePlanManagement from "./comprehensive-plan-management"
+import BiddingDocumentManagement from "./bidding-document-management"
 
 // 增强的日期选择器组件
 function EnhancedDatePicker({ 
@@ -1835,13 +1836,17 @@ function ReserveProjectManagementWithParams() {
               <p className="text-gray-500">该功能正在开发中...</p>
             </div>
           </div>
-        ) : activeTab === "招标采购" ? (
+        ) : activeTab === "招标采购" && activeSubTab === "招标管理" ? (
+          <BiddingDocumentManagement currentUser={currentUser} />
+        ) : activeTab === "招标采购" && activeSubTab === "采购管理" ? (
           <div className="bg-white p-6 rounded-lg shadow-md h-full flex items-center justify-center">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-600 mb-2">招标采购</h2>
+              <h2 className="text-xl font-semibold text-gray-600 mb-2">采购管理</h2>
               <p className="text-gray-500">该功能正在开发中...</p>
             </div>
           </div>
+        ) : activeTab === "招标采购" ? (
+          <BiddingDocumentManagement currentUser={currentUser} />
         ) : activeTab === "进度管理" ? (
           <div className="bg-white p-6 rounded-lg shadow-md h-full flex items-center justify-center">
             <div className="text-center">

@@ -1,19 +1,19 @@
 # Windows 开发环境构建脚本
-# 备份原配置文件
-Copy-Item "next.config.mjs" "next.config.prod.mjs" -Force
+Write-Host "Windows 环境构建开始..." -ForegroundColor Green
+Write-Host "使用开发配置（禁用 standalone 输出以避免权限问题）" -ForegroundColor Yellow
 
-# 使用开发配置
-Copy-Item "next.config.dev.mjs" "next.config.mjs" -Force
-
-Write-Host "使用开发配置构建（禁用 standalone 输出）..." -ForegroundColor Green
+# 设置环境变量强制使用开发配置
+$env:FORCE_DEV_CONFIG = "true"
 
 # 执行构建
 npm run build
 
-# 恢复生产配置
-Copy-Item "next.config.prod.mjs" "next.config.mjs" -Force
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Windows 构建成功完成!" -ForegroundColor Green
+} else {
+    Write-Host "构建失败，退出码: $LASTEXITCODE" -ForegroundColor Red
+    exit $LASTEXITCODE
+}
 
-# 清理临时文件
-Remove-Item "next.config.prod.mjs" -Force
-
-Write-Host "构建完成，已恢复生产配置" -ForegroundColor Green 
+# 清理环境变量
+Remove-Item Env:FORCE_DEV_CONFIG -ErrorAction SilentlyContinue 

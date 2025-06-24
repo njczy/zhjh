@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:win": "next dev",
     "build": "next build",
     "build:win": "powershell -ExecutionPolicy Bypass -File build-win.ps1",
-    "build:docker": "next build",
-    "build:standalone": "next build",
+    "build:linux": "bash build-linux.sh",
+    "build:docker": "bash build-linux.sh", 
+    "build:standalone": "bash build-linux.sh",
     "start": "next start",
     "lint": "next lint"
   },

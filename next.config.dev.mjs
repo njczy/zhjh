@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  // Windows 开发环境：完全禁用 standalone 输出
+
+// 开发环境配置 - 专为 Windows 开发优化
+console.log(`🔧 开发环境配置加载 (Windows 优化)`)
+console.log(`   平台: ${process.platform}`)
+console.log(`   standalone 输出: 禁用 (避免权限问题)`)
+
+const nextConfigDev = {
+  // 开发环境不使用 standalone 输出
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -11,9 +17,8 @@ const nextConfig = {
     unoptimized: true,
   },
   
-  // 针对开发环境的配置
+  // 开发环境优化配置
   poweredByHeader: false,
-  compress: false, // 开发环境不需要压缩
   
   // 实验性功能配置（Next.js 15.x 兼容）
   experimental: {
@@ -31,16 +36,8 @@ const nextConfig = {
       }
     }
     
-    // 开发环境的 webpack 配置
-    if (process.env.NODE_ENV !== 'production') {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-      }
-    }
-    
     return config
   },
 }
 
-export default nextConfig 
+export default nextConfigDev 

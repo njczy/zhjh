@@ -1,7 +1,25 @@
 /** @type {import('next').NextConfig} */
+
+// 检测当前运行环境
+const isWindows = process.platform === 'win32'
+const isLinux = process.platform === 'linux'
+const isDevelopment = process.env.NODE_ENV === 'development'
+const forceDevConfig = process.env.FORCE_DEV_CONFIG === 'true'
+
+// 根据环境决定是否使用 standalone 输出
+// 优先级：FORCE_DEV_CONFIG > 环境检测
+// Windows 开发环境：不使用 standalone（避免权限问题）
+// Linux 生产环境：使用 standalone（用于 Docker 部署）
+const shouldUseStandalone = forceDevConfig ? false : (!isWindows || (isLinux && !isDevelopment))
+
+console.log(`🔧 Next.js 配置信息:`)
+console.log(`   平台: ${process.platform}`)
+console.log(`   环境: ${process.env.NODE_ENV || 'development'}`)
+console.log(`   standalone 输出: ${shouldUseStandalone ? '启用' : '禁用'}`)
+
 const nextConfig = {
-  // 生产环境：启用 standalone 输出用于 Docker 部署
-  output: 'standalone',
+  // 条件性启用 standalone 输出
+  ...(shouldUseStandalone && { output: 'standalone' }),
   eslint: {
     ignoreDuringBuilds: true,
   },

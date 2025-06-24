@@ -19,9 +19,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Build the Next.js application
-# Use build:docker script which should work better in Linux container
-RUN pnpm run build:docker
+# Build the Next.js application for Linux production environment
+# This will enable standalone output for Docker deployment
+RUN pnpm run build:linux
 
 # In standalone mode, Next.js builds a minimal server.
 # It also creates a 'standalone' folder with all necessary files.
