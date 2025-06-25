@@ -32,7 +32,14 @@ function EnhancedDatePicker({
   const [currentMonth, setCurrentMonth] = useState(date || new Date())
 
   const currentYear = currentMonth.getFullYear()
-  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i)
+  // 生成从1990年到2050年的年份范围
+  const years = Array.from({ length: 61 }, (_, i) => 1990 + i)
+  
+  // 计算当前年份在列表中的索引，用于滚动定位
+  const currentYearIndex = years.findIndex(year => year === currentYear)
+  // 计算初始滚动位置，使当前年份显示在第6行（11行的中间）
+  // 要让当前年份显示在第6行，需要让前面有5行，所以滚动到 (currentYearIndex - 5) * 32
+  const initialScrollTop = Math.max(0, (currentYearIndex - 5) * 32)
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -45,7 +52,7 @@ function EnhancedDatePicker({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "yyyy年MM月dd日", { locale: zhCN }) : placeholder}
+          {date ? format(date, "yyyy-MM-dd") : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -60,13 +67,51 @@ function EnhancedDatePicker({
               newDate.setFullYear(parseInt(year))
               setCurrentMonth(newDate)
             }}
+            onOpenChange={(open) => {
+              if (open) {
+                // 当下拉框打开时，延迟滚动到当前年份
+                setTimeout(() => {
+                  const selectContent = document.querySelector('[role="listbox"]')
+                  if (selectContent) {
+                    const currentYearElement = selectContent.querySelector(`[data-value="${currentYear}"]`)
+                    if (currentYearElement) {
+                      currentYearElement.scrollIntoView({ 
+                        block: 'center',
+                        behavior: 'instant'
+                      })
+                    }
+                  }
+                }, 100)
+              }
+            }}
           >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent 
+              className="h-[352px] overflow-y-auto" 
+              position="item-aligned"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+              }}
+              ref={(ref) => {
+                if (ref) {
+                  // 设置初始滚动位置
+                  setTimeout(() => {
+                    ref.scrollTop = initialScrollTop
+                  }, 0)
+                }
+              }}
+            >
               {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
+                <SelectItem 
+                  key={year} 
+                  value={year.toString()}
+                  className={cn(
+                    "h-8",
+                    year === currentYear && "bg-accent"
+                  )}
+                >
                   {year}年
                 </SelectItem>
               ))}

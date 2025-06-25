@@ -3,7 +3,7 @@
 import type React from "react"
 import { Eye, ListFilter, CalendarCheck, ChevronLeft, ChevronRight, ClipboardCheck } from "lucide-react" // Declare the Eye variable
 
-import { useEffect, useState, useMemo, Suspense } from "react"
+import { useEffect, useState, useMemo, Suspense, useRef } from "react"
 import Link from "next/link"
 import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUp, Plus, Edit, Trash, Search, RotateCcw, CalendarIcon, Upload, BookOpen } from "lucide-react"
@@ -47,6 +58,8 @@ import ProjectDetailView from "./project-detail-view"
 import TodoList from "./todo-list"
 import ComprehensivePlanManagement from "./comprehensive-plan-management"
 import BiddingDocumentManagement from "./bidding-document-management"
+import ProcurementDocumentManagement from "./procurement-document-management"
+import ContractManagement from "./contract-management"
 
 // 增强的日期选择器组件
 function EnhancedDatePicker({ 
@@ -62,9 +75,35 @@ function EnhancedDatePicker({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(date || new Date())
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const currentYear = currentMonth.getFullYear()
-  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i)
+  // 生成从1990年到2050年的年份范围
+  const years = Array.from({ length: 61 }, (_, i) => 1990 + i)
+  
+  // 计算当前年份在列表中的索引，用于滚动定位
+  const currentYearIndex = years.findIndex(year => year === currentYear)
+
+  // 滚动到当前年份的函数
+  const scrollToCurrentYear = () => {
+    if (scrollContainerRef.current) {
+      // 每个选项高度32px，要让当前年份在中间（第6行），需要滚动到：
+      // (当前年份索引 - 5) * 32px
+      const scrollTop = Math.max(0, (currentYearIndex - 5) * 32)
+      scrollContainerRef.current.scrollTo({
+        top: scrollTop,
+        behavior: 'instant'
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      // 延迟执行滚动，确保DOM已渲染
+      const timer = setTimeout(scrollToCurrentYear, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen, currentYearIndex])
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -79,7 +118,7 @@ function EnhancedDatePicker({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "yyyy年MM月dd日", { locale: zhCN }) : placeholder}
+          {date ? format(date, "yyyy-MM-dd") : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -94,13 +133,30 @@ function EnhancedDatePicker({
               newDate.setFullYear(parseInt(year))
               setCurrentMonth(newDate)
             }}
+            onOpenChange={(open) => {
+              setIsOpen(open)
+            }}
           >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent 
+              ref={scrollContainerRef}
+              className="h-[352px] overflow-y-auto" 
+              position="item-aligned"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+              }}
+            >
               {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
+                <SelectItem 
+                  key={year} 
+                  value={year.toString()}
+                  className={cn(
+                    "h-8",
+                    year === currentYear && "bg-accent"
+                  )}
+                >
                   {year}年
                 </SelectItem>
               ))}
@@ -724,14 +780,13 @@ function ReserveProjectManagementWithParams() {
   }
 
   const handleInitializeData = async () => {
-    if (currentUser.role === "部门领导" && currentUser.department === "发展策划部门") {
-      const result = await initializeDataAction()
-      if (result.success) {
-        await fetchProjects() // Refresh the projects list
-        alert(result.message)
-      } else {
-        alert(result.message)
-      }
+    // 允许所有用户执行数据初始化，用于测试和开发环境
+    const result = await initializeDataAction()
+    if (result.success) {
+      await fetchProjects() // Refresh the projects list
+      alert(result.message)
+    } else {
+      alert(result.message)
     }
   }
 
@@ -855,15 +910,37 @@ function ReserveProjectManagementWithParams() {
             运营管控平台
           </div>
           <div className="flex items-center space-x-4">
-            <Button
-              onClick={handleInitializeData}
-              variant="outline"
-              size="sm"
-              className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              数据初始化
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  数据初始化
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>确认数据初始化</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    此操作将清空所有当前数据并恢复到初始状态，包括项目、审批记录和月度评审记录。
+                    <br />
+                    <strong className="text-red-600">此操作不可逆，确定要继续吗？</strong>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleInitializeData}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    确认初始化
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <span className="text-sm text-gray-600">
               当前用户: {currentUser.name} ({currentUser.role} - {currentUser.center || currentUser.department})
             </span>
@@ -1092,52 +1169,26 @@ function ReserveProjectManagementWithParams() {
               )}
               
               {/* 时间查询条件 */}
-              <div className="w-[360px] space-y-1">
-                <Label className="block text-sm font-medium text-gray-700">
-                  时间筛选
+              <div className="w-[150px]">
+                <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  开始日期
                 </Label>
-                <div className="flex space-x-2">
-                  <div className="relative flex-1">
-                    <Input
-                      type="date"
-                      value={filterStartDate ? format(filterStartDate, "yyyy-MM-dd") : ""}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setFilterStartDate(new Date(e.target.value))
-                        } else {
-                          setFilterStartDate(undefined)
-                        }
-                      }}
-                      className="[&::-webkit-datetime-edit-text]:text-transparent [&::-webkit-datetime-edit-month-field]:text-transparent [&::-webkit-datetime-edit-day-field]:text-transparent [&::-webkit-datetime-edit-year-field]:text-transparent"
-                      title="选择开始日期"
-                    />
-                    {!filterStartDate && (
-                      <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-gray-500 text-sm z-10">
-                        开始日期
-                      </div>
-                    )}
-                  </div>
-                  <div className="relative flex-1">
-                    <Input
-                      type="date"
-                      value={filterEndDate ? format(filterEndDate, "yyyy-MM-dd") : ""}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setFilterEndDate(new Date(e.target.value))
-                        } else {
-                          setFilterEndDate(undefined)
-                        }
-                      }}
-                      className="[&::-webkit-datetime-edit-text]:text-transparent [&::-webkit-datetime-edit-month-field]:text-transparent [&::-webkit-datetime-edit-day-field]:text-transparent [&::-webkit-datetime-edit-year-field]:text-transparent"
-                      title="选择结束日期"
-                    />
-                    {!filterEndDate && (
-                      <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-gray-500 text-sm z-10">
-                        结束日期
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <EnhancedDatePicker
+                  date={filterStartDate}
+                  onDateChange={setFilterStartDate}
+                  placeholder="开始日期"
+                />
+              </div>
+
+              <div className="w-[150px]">
+                <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  结束日期
+                </Label>
+                <EnhancedDatePicker
+                  date={filterEndDate}
+                  onDateChange={setFilterEndDate}
+                  placeholder="结束日期"
+                />
               </div>
 
               {/* Reset Filters Button */}
@@ -1830,21 +1881,11 @@ function ReserveProjectManagementWithParams() {
         ) : activeTab === "储备及综合计划" && activeSubTab === "下达" ? (
           <ComprehensivePlanManagement currentUser={currentUser} />
         ) : activeTab === "合同管理" ? (
-          <div className="bg-white p-6 rounded-lg shadow-md h-full flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-600 mb-2">合同管理</h2>
-              <p className="text-gray-500">该功能正在开发中...</p>
-            </div>
-          </div>
+          <ContractManagement currentUser={currentUser} />
         ) : activeTab === "招标采购" && activeSubTab === "招标管理" ? (
           <BiddingDocumentManagement currentUser={currentUser} />
         ) : activeTab === "招标采购" && activeSubTab === "采购管理" ? (
-          <div className="bg-white p-6 rounded-lg shadow-md h-full flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-600 mb-2">采购管理</h2>
-              <p className="text-gray-500">该功能正在开发中...</p>
-            </div>
-          </div>
+          <ProcurementDocumentManagement currentUser={currentUser} />
         ) : activeTab === "招标采购" ? (
           <BiddingDocumentManagement currentUser={currentUser} />
         ) : activeTab === "进度管理" ? (

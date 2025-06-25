@@ -1,8 +1,7 @@
 // 嵌入式月度评审组件（不包含头部和侧边栏）
 "use client"
 
-import React from "react"
-import { useEffect, useState, useMemo } from "react"
+import React, { useRef, useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -84,9 +83,35 @@ function EnhancedDatePicker({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(date || new Date())
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const currentYear = currentMonth.getFullYear()
-  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i)
+  // 生成从1990年到2050年的年份范围
+  const years = Array.from({ length: 61 }, (_, i) => 1990 + i)
+  
+  // 计算当前年份在列表中的索引，用于滚动定位
+  const currentYearIndex = years.findIndex(year => year === currentYear)
+
+  // 滚动到当前年份的函数
+  const scrollToCurrentYear = () => {
+    if (scrollContainerRef.current) {
+      // 每个选项高度32px，要让当前年份在中间（第6行），需要滚动到：
+      // (当前年份索引 - 5) * 32px
+      const scrollTop = Math.max(0, (currentYearIndex - 5) * 32)
+      scrollContainerRef.current.scrollTo({
+        top: scrollTop,
+        behavior: 'instant'
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      // 延迟执行滚动，确保DOM已渲染
+      const timer = setTimeout(scrollToCurrentYear, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen, currentYearIndex])
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -95,13 +120,13 @@ function EnhancedDatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full justify-start text-left font-normal h-10",
             !date && "text-muted-foreground",
             disabled && "bg-gray-50"
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "yyyy年MM月dd日", { locale: zhCN }) : placeholder}
+          {date ? format(date, "yyyy-MM-dd") : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -116,13 +141,30 @@ function EnhancedDatePicker({
               newDate.setFullYear(parseInt(year))
               setCurrentMonth(newDate)
             }}
+            onOpenChange={(open) => {
+              setIsOpen(open)
+            }}
           >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent 
+              ref={scrollContainerRef}
+              className="h-[352px] overflow-y-auto" 
+              position="item-aligned"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+              }}
+            >
               {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
+                <SelectItem 
+                  key={year} 
+                  value={year.toString()}
+                  className={cn(
+                    "h-8",
+                    year === currentYear && "bg-accent"
+                  )}
+                >
                   {year}年
                 </SelectItem>
               ))}
@@ -454,24 +496,25 @@ export default function MonthlyReviewsEmbedded() {
     <>
     <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-800">月度评审</h2>
+        <h2 className="text-2xl font-bold text-gray-800">月度评审</h2>
       </div>
 
       {/* 筛选区域 */}
-      <div className="mb-6 flex gap-4 items-end flex-shrink-0">
-                      <div className="w-[200px]">
-                <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
-                  会议编号
-                </Label>
+      <div className="mb-6 flex gap-4 items-end">
+        <div className="w-[150px]">
+          <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
+            会议编号
+          </Label>
           <Input
             id="search-input"
             placeholder="请输入"
             value={meetingCode}
             onChange={(e) => setMeetingCode(e.target.value)}
+            className="h-10"
           />
         </div>
         
-        <div className="w-[180px]">
+        <div className="w-[150px]">
           <Label className="block text-sm font-medium text-gray-700 mb-1">
             评审时间
           </Label>
@@ -482,13 +525,13 @@ export default function MonthlyReviewsEmbedded() {
           />
         </div>
         
-        <div className="w-[20px] flex items-center justify-center">
-          <span className="text-gray-500">-</span>
+        <div className="w-[20px] flex items-center justify-center h-10">
+          <span className="text-gray-500 font-medium">-</span>
         </div>
         
-        <div className="w-[180px]">
+        <div className="w-[150px]">
           <Label className="block text-sm font-medium text-gray-700 mb-1">
-            &nbsp;
+            结束日期
           </Label>
           <EnhancedDatePicker
             date={filterEndDate}
@@ -497,29 +540,22 @@ export default function MonthlyReviewsEmbedded() {
           />
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 h-10">
           <Checkbox
             id="include-tax"
             checked={includeTax}
             onCheckedChange={(checked) => setIncludeTax(checked === true)}
             className="data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
           />
-          <Label htmlFor="include-tax" className="text-sm text-gray-700">
+          <Label htmlFor="include-tax" className="text-sm text-gray-700 whitespace-nowrap">
             是否含税
           </Label>
         </div>
         
-        <div className="flex items-end space-x-2">
-          <Button
-            className="bg-teal-500 hover:bg-teal-600 text-white"
-            onClick={() => {
-              // 查询逻辑
-            }}
-          >
-            查询
-          </Button>
+        <div className="flex gap-3 ml-auto items-center h-10">
           <Button
             variant="outline"
+            className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 px-6"
             onClick={() => {
               setMeetingCode("")
               setFilterStartDate(undefined)
@@ -529,13 +565,11 @@ export default function MonthlyReviewsEmbedded() {
           >
             重置
           </Button>
-        </div>
-        
-        <div className="flex items-end space-x-2 ml-auto">
+          
           {canInitiateReview && (
             <Button
               onClick={() => setIsInitiateReviewModalOpen(true)}
-              className="bg-teal-500 hover:bg-teal-600 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6"
             >
               月度评审发起
             </Button>
@@ -548,18 +582,18 @@ export default function MonthlyReviewsEmbedded() {
         <ScrollArea className="flex-1 w-full">
           <Table className="w-full">
             <TableHeader>
-              <TableRow className="bg-teal-500 text-white hover:bg-teal-500">
-                <TableHead className="text-white text-center font-medium w-[40px]"></TableHead>
-                <TableHead className="text-white text-left font-medium w-[180px] whitespace-nowrap">会议编号</TableHead>
-                <TableHead className="text-white text-center font-medium w-[70px] whitespace-nowrap">项目总数量</TableHead>
-                <TableHead className="text-white text-center font-medium w-[120px] whitespace-nowrap text-xs leading-tight">项目支出总金额<br/>({includeTax ? '含税' : '不含税'}/元)</TableHead>
-                <TableHead className="text-white text-center font-medium w-[120px] whitespace-nowrap text-xs leading-tight">项目收入总金额<br/>({includeTax ? '含税' : '不含税'}/元)</TableHead>
-                <TableHead className="text-white text-center font-medium w-[80px] whitespace-nowrap">评审时间</TableHead>
-                <TableHead className="text-white text-center font-medium w-[70px] whitespace-nowrap text-xs leading-tight">归口审核<br/>通过</TableHead>
-                <TableHead className="text-white text-center font-medium w-[90px] whitespace-nowrap text-xs leading-tight">根据评审意见<br/>修改后通过</TableHead>
-                <TableHead className="text-white text-center font-medium w-[70px] whitespace-nowrap text-xs leading-tight">归口审核<br/>不通过</TableHead>
-                <TableHead className="text-white text-center font-medium w-[70px] whitespace-nowrap">总通过率</TableHead>
-                <TableHead className="text-white text-center font-medium w-[240px] whitespace-nowrap">操作</TableHead>
+              <TableRow className="h-12">
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[40px]"></TableHead>
+                <TableHead className="text-left text-sm font-semibold text-gray-700 px-4 py-3 w-[180px] whitespace-nowrap">会议编号</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[70px] whitespace-nowrap">项目总数量</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[120px] whitespace-nowrap text-xs leading-tight">项目支出总金额<br/>({includeTax ? '含税' : '不含税'}/元)</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[120px] whitespace-nowrap text-xs leading-tight">项目收入总金额<br/>({includeTax ? '含税' : '不含税'}/元)</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[80px] whitespace-nowrap">评审时间</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[70px] whitespace-nowrap text-xs leading-tight">归口审核<br/>通过</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[90px] whitespace-nowrap text-xs leading-tight">根据评审意见<br/>修改后通过</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[70px] whitespace-nowrap text-xs leading-tight">归口审核<br/>不通过</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[70px] whitespace-nowrap">总通过率</TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[240px] whitespace-nowrap">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -815,31 +849,39 @@ export default function MonthlyReviewsEmbedded() {
               <Label htmlFor="project-select" className="text-right">
                 项目名称
               </Label>
-              <Select
-                value={currentReview?.projectId || ""}
-                onValueChange={(value) => {
-                  const selectedProject = allCenterProjects.find(p => p.id === value)
-                  if (selectedProject && currentReview) {
-                    setCurrentReview({
-                      ...currentReview,
-                      projectId: value,
-                      projectName: selectedProject.name
-                    })
-                  }
-                }}
-                disabled={originalReviewStatus !== "" && originalReviewStatus !== "待评审"}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="选择项目" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allCenterProjects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name} ({project.id})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {originalReviewStatus !== "" && originalReviewStatus !== "待评审" ? (
+                <Input
+                  value={currentReview?.projectName || ""}
+                  className="col-span-3"
+                  disabled={true}
+                  readOnly={true}
+                />
+              ) : (
+                <Select
+                  value={currentReview?.projectId || ""}
+                  onValueChange={(value) => {
+                    const selectedProject = allCenterProjects.find(p => p.id === value)
+                    if (selectedProject && currentReview) {
+                      setCurrentReview({
+                        ...currentReview,
+                        projectId: value,
+                        projectName: selectedProject.name
+                      })
+                    }
+                  }}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="选择项目" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allCenterProjects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name} ({project.id})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="review-date" className="text-right">

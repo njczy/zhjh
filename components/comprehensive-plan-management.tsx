@@ -16,7 +16,9 @@ import {
   CheckCircle,
   AlertCircle,
   FileText,
-  RotateCcw
+  RotateCcw,
+  Eye,
+  CalendarIcon
 } from "lucide-react"
 import {
   Dialog,
@@ -28,7 +30,11 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { zhCN } from "date-fns/locale"
 
 import { 
   getCurrentYearPlansAction, 
@@ -45,6 +51,127 @@ import {
   getProjectAffiliationDisplay 
 } from "@/lib/data"
 import ProjectDetailView from "./project-detail-view"
+
+// 增强的日期选择器组件
+function EnhancedDatePicker({ 
+  date, 
+  onDateChange, 
+  placeholder,
+  disabled = false
+}: { 
+  date: Date | undefined
+  onDateChange: (date: Date | undefined) => void
+  placeholder: string
+  disabled?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [currentMonth, setCurrentMonth] = useState(date || new Date())
+
+  const currentYear = currentMonth.getFullYear()
+  // 生成从1990年到2050年的年份范围
+  const years = Array.from({ length: 61 }, (_, i) => 1990 + i)
+  
+  // 计算当前年份在列表中的索引，用于滚动定位
+  const currentYearIndex = years.findIndex(year => year === currentYear)
+  // 计算初始滚动位置，使当前年份显示在第6行（11行的中间）
+  // 要让当前年份显示在第6行，需要让前面有5行，所以滚动到 (currentYearIndex - 5) * 32
+  const initialScrollTop = Math.max(0, (currentYearIndex - 5) * 32)
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          disabled={disabled}
+          className={cn(
+            "w-full justify-start text-left font-normal h-10",
+            !date && "text-muted-foreground",
+            disabled && "bg-gray-50"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "yyyy-MM-dd") : placeholder}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <div className="p-3 border-b">
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-sm font-medium">快速选择年份</Label>
+          </div>
+          <Select
+            value={currentYear.toString()}
+            onValueChange={(year) => {
+              const newDate = new Date(currentMonth)
+              newDate.setFullYear(parseInt(year))
+              setCurrentMonth(newDate)
+            }}
+            onOpenChange={(open) => {
+              if (open) {
+                // 当下拉框打开时，延迟滚动到当前年份
+                setTimeout(() => {
+                  const selectContent = document.querySelector('[role="listbox"]')
+                  if (selectContent) {
+                    const currentYearElement = selectContent.querySelector(`[data-value="${currentYear}"]`)
+                    if (currentYearElement) {
+                      currentYearElement.scrollIntoView({ 
+                        block: 'center',
+                        behavior: 'instant'
+                      })
+                    }
+                  }
+                }, 100)
+              }
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent 
+              className="h-[352px] overflow-y-auto" 
+              position="item-aligned"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+              }}
+              ref={(ref) => {
+                if (ref) {
+                  // 设置初始滚动位置
+                  setTimeout(() => {
+                    ref.scrollTop = initialScrollTop
+                  }, 0)
+                }
+              }}
+            >
+              {years.map((year) => (
+                <SelectItem 
+                  key={year} 
+                  value={year.toString()}
+                  className={cn(
+                    "h-8",
+                    year === currentYear && "bg-accent"
+                  )}
+                >
+                  {year}年
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <CalendarComponent
+          mode="single"
+          selected={date}
+          onSelect={(selectedDate) => {
+            onDateChange(selectedDate)
+            setIsOpen(false)
+          }}
+          month={currentMonth}
+          onMonthChange={setCurrentMonth}
+          locale={zhCN}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 // 状态颜色映射
 const statusColors = {
@@ -303,50 +430,52 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               onClick={() => setSelectedPlanId(plan.id)}
             >
               <span className="font-medium mr-2">{plan.name}</span>
-              <span className="text-gray-500 ml-2 text-xs">项目数: {plan.projectIds.length}</span>
+              <span className="text-gray-500 ml-2 text-xs">
+                项目数: {selectedPlanId === plan.id ? filteredCompiledProjects.length : 
+                  compiledProjects.filter(p => plan.projectIds.includes(p.id)).length}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
       {/* 筛选条件和操作按钮 */}
-      <div className="mb-6 flex gap-3 items-end">
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">储备项目</Label>
+      <div className="mb-6 flex gap-4 items-end flex-shrink-0">
+        <div className="w-[300px]">
+          <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
+            搜索项目
+          </Label>
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-500 z-10" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 z-10" />
             <Input
-              placeholder="项目名称"
+              id="search-input"
+              placeholder="搜索项目名称、负责人或部门"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 text-sm h-8"
+              className="pl-9"
             />
           </div>
         </div>
 
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">项目会议</Label>
-          <Input placeholder="项目负责人" className="text-sm h-8" />
-        </div>
-
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">项目类型</Label>
+        <div className="w-[130px]">
+          <Label className="block text-sm font-medium text-gray-700 mb-1">项目状态</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="text-sm h-8">
-              <SelectValue placeholder="项目状态" />
+            <SelectTrigger>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部</SelectItem>
               <SelectItem value="批复">批复</SelectItem>
+              <SelectItem value="下达">下达</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="w-[120px]">
+        <div className="w-[140px]">
           <Label className="block text-sm font-medium text-gray-700 mb-1">责任部门</Label>
           <Select value={centerFilter} onValueChange={setCenterFilter}>
-            <SelectTrigger className="text-sm h-8">
-              <SelectValue placeholder="所属中心" />
+            <SelectTrigger>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部</SelectItem>
@@ -357,82 +486,34 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
           </Select>
         </div>
 
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">项目编号</Label>
-          <Input placeholder="项目编号" className="text-sm h-8" />
+        {/* 时间筛选 */}
+        <div className="w-[150px]">
+          <Label className="block text-sm font-medium text-gray-700 mb-1">
+            开始日期
+          </Label>
+          <EnhancedDatePicker
+            date={startDateFilter}
+            onDateChange={setStartDateFilter}
+            placeholder="开始日期"
+          />
         </div>
 
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">开始时间</Label>
-          <div className="relative">
-            <Input
-              type="date"
-              value={startDateFilter ? format(startDateFilter, "yyyy-MM-dd") : ""}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setStartDateFilter(new Date(e.target.value))
-                } else {
-                  setStartDateFilter(undefined)
-                }
-              }}
-              className="text-sm h-8"
-              placeholder="选择开始时间"
-            />
-          </div>
+        <div className="w-[150px]">
+          <Label className="block text-sm font-medium text-gray-700 mb-1">
+            结束日期
+          </Label>
+          <EnhancedDatePicker
+            date={endDateFilter}
+            onDateChange={setEndDateFilter}
+            placeholder="结束日期"
+          />
         </div>
 
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">结束时间</Label>
-          <div className="relative">
-            <Input
-              type="date"
-              value={endDateFilter ? format(endDateFilter, "yyyy-MM-dd") : ""}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setEndDateFilter(new Date(e.target.value))
-                } else {
-                  setEndDateFilter(undefined)
-                }
-              }}
-              className="text-sm h-8"
-              placeholder="选择结束时间"
-            />
-          </div>
-        </div>
-
-        <div className="w-[120px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">实施年份</Label>
-          <Input placeholder="实施年份" className="text-sm h-8" />
-        </div>
-
-        <div className="w-[100px]">
-          <Label className="block text-sm font-medium text-gray-700 mb-1">备注</Label>
-          <Input placeholder="备注" className="text-sm h-8" />
-        </div>
-
-        {/* 操作按钮区域 */}
-        <div className="flex gap-2 ml-4 items-center">
-
-          <div className="text-xs text-gray-600 mr-2 whitespace-nowrap">
-            已选择 {selectedProjectIds.length} / {filteredCompiledProjects.length}
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="bg-teal-500 hover:bg-teal-600 text-white border-teal-500 text-xs px-2 py-1 h-8"
+        {/* 重置筛选按钮 */}
+        <div className="flex items-end">
+          <Button
+            variant="outline"
             onClick={() => {
-              // 查询功能 - 重新获取数据
-              fetchData()
-            }}
-          >
-            查询
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 text-xs px-2 py-1 h-8"
-            onClick={() => {
-              // 重置所有筛选条件到默认值
               setSearchTerm("")
               setStatusFilter("all")
               setCenterFilter("all")
@@ -440,15 +521,29 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               setEndDateFilter(undefined)
               setSelectedProjectIds([])
             }}
+            className="whitespace-nowrap"
           >
-            重置
+            重置筛选
           </Button>
+        </div>
+
+        {/* 操作按钮区域 */}
+        <div className="flex gap-3 ml-auto items-end">
+          <div className="text-xs text-gray-600 mr-2 whitespace-nowrap pb-2">
+            已选择 {selectedProjectIds.length} / {filteredCompiledProjects.length}
+          </div>
           <Button 
-            onClick={() => setIsCompilationDialogOpen(true)}
-            size="sm"
-            className="bg-teal-500 hover:bg-teal-600 text-white text-xs px-2 py-1 h-8"
+            onClick={() => {
+              // 根据当前选中的计划页签设置默认选择的计划
+              const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
+              if (currentSelectedPlan) {
+                setSelectedPlan(currentSelectedPlan)
+              }
+              setIsCompilationDialogOpen(true)
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            计划编制
+            <Plus className="mr-2 h-4 w-4" /> 计划编制
           </Button>
         </div>
       </div>
@@ -456,25 +551,27 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
       {/* 可编制项目列表 */}
       <div className="flex-1 overflow-hidden">        
         <ScrollArea className="h-full">
-          <Table>
-                          <TableHeader className="bg-teal-500">
-                <TableRow>
-                  <TableHead className="text-white w-[50px]">
+          <Table className="w-full table-fixed text-sm">
+            <TableHeader>
+              <TableRow className="h-12 bg-gray-50">
+                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">
+                  <div className="flex items-center justify-center">
                     <Checkbox
                       checked={selectedProjectIds.length === filteredCompiledProjects.length && filteredCompiledProjects.length > 0}
                       onCheckedChange={handleSelectAllCompiled}
+                      className="w-4 h-4"
                     />
-                  </TableHead>
-                <TableHead className="text-white">项目名称</TableHead>
-                <TableHead className="text-white">项目负责人</TableHead>
-                <TableHead className="text-white">项目负责人[下属部门]</TableHead>
-                <TableHead className="text-white">项目责任人</TableHead>
-                <TableHead className="text-white">投入</TableHead>
-                <TableHead className="text-white">产出</TableHead>
-                <TableHead className="text-white">实施年份</TableHead>
-                <TableHead className="text-white">全部审核环节</TableHead>
-                <TableHead className="text-white">备注</TableHead>
-                <TableHead className="text-white">操作</TableHead>
+                  </div>
+                </TableHead>
+                <TableHead className="w-[20%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目名称</TableHead>
+                <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目负责人</TableHead>
+                <TableHead className="w-[12%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">责任部门</TableHead>
+                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">投入(万元)</TableHead>
+                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">产出(万元)</TableHead>
+                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">实施年份</TableHead>
+                <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目状态</TableHead>
+                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">备注</TableHead>
+                <TableHead className="w-[16%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -491,42 +588,44 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               ) : (
                 filteredCompiledProjects.map((project, index) => (
                   <TableRow key={project.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedProjectIds.includes(project.id)}
-                        onCheckedChange={(checked) => handleProjectSelect(project.id, checked as boolean)}
-                      />
+                    <TableCell className="text-center px-2 py-3 align-middle">
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={selectedProjectIds.includes(project.id)}
+                          onCheckedChange={(checked) => handleProjectSelect(project.id, checked as boolean)}
+                          className="w-4 h-4"
+                        />
+                      </div>
                     </TableCell>
-                    <TableCell className="font-medium">{project.name}</TableCell>
-                    <TableCell>{project.owner}</TableCell>
-                    <TableCell>{getProjectAffiliationDisplay(project)}</TableCell>
-                    <TableCell>{project.owner}</TableCell>
-                    <TableCell>投入金额(万元)</TableCell>
-                    <TableCell>预计产出(万元)</TableCell>
-                    <TableCell>2025年计划(万元)</TableCell>
-                    <TableCell>
+                    <TableCell className="text-left px-3 py-3 font-medium align-middle">{project.name}</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">{project.owner}</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">{getProjectAffiliationDisplay(project)}</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">2025</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">
                       <Badge className={statusColors[project.status]}>
                         {project.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+                    <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
+                    <TableCell className="text-center px-2 py-3 align-middle">
+                      <div className="flex flex-wrap gap-1 justify-center">
                         <Button 
-                          size="sm" 
                           variant="outline" 
-                          className="text-xs px-2 py-1"
+                          size="sm" 
+                          className="h-7 px-2 text-xs"
                           onClick={() => {
                             // 查看项目详情
                             setViewingProject(project)
                           }}
                         >
-                          查看
+                          <Eye className="h-3 w-3 mr-1" /> 查看
                         </Button>
                         <Button 
-                          size="sm" 
                           variant="outline" 
-                          className="text-xs px-2 py-1 text-red-600 hover:text-red-700"
+                          size="sm" 
+                          className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
                           onClick={() => {
                             // 从综合计划中移除项目
                             handleRemoveProject(project)
@@ -576,7 +675,7 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
                 <SelectContent>
                   {plans.filter(p => p.status !== "已归档").map(plan => (
                     <SelectItem key={plan.id} value={plan.id}>
-                      {plan.name} ({plan.status})
+                      {plan.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -599,38 +698,39 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               </div>
               
               <ScrollArea className="h-80 border rounded-md">
-                <Table>
-                  <TableHeader className="bg-teal-500">
-                    <TableRow>
-                      <TableHead className="text-white w-[50px]">选择</TableHead>
-                      <TableHead className="text-white">项目名称</TableHead>
-                      <TableHead className="text-white">项目负责人</TableHead>
-                      <TableHead className="text-white">项目负责人[下属部门]</TableHead>
-                      <TableHead className="text-white">项目责任人</TableHead>
-                      <TableHead className="text-white">投入</TableHead>
-                      <TableHead className="text-white">产出</TableHead>
-                      <TableHead className="text-white">实施年份</TableHead>
-                      <TableHead className="text-white">全部审核环节</TableHead>
+                <Table className="w-full table-fixed text-sm">
+                  <TableHeader>
+                    <TableRow className="h-12 bg-gray-50">
+                      <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">选择</TableHead>
+                      <TableHead className="w-[25%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目名称</TableHead>
+                      <TableHead className="w-[12%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目负责人</TableHead>
+                      <TableHead className="w-[15%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">责任部门</TableHead>
+                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">投入(万元)</TableHead>
+                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">产出(万元)</TableHead>
+                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">实施年份</TableHead>
+                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目状态</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAvailableProjects.map((project, index) => (
                       <TableRow key={project.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedProjectIds.includes(project.id)}
-                            onCheckedChange={(checked) => handleProjectSelect(project.id, checked as boolean)}
-                          />
+                        <TableCell className="text-center px-2 py-3 align-middle">
+                          <div className="flex items-center justify-center">
+                            <Checkbox
+                              checked={selectedProjectIds.includes(project.id)}
+                              onCheckedChange={(checked) => handleProjectSelect(project.id, checked as boolean)}
+                              className="w-4 h-4"
+                            />
+                          </div>
                         </TableCell>
-                        <TableCell className="font-medium">{project.name}</TableCell>
-                        <TableCell>{project.owner}</TableCell>
-                        <TableCell>{getProjectAffiliationDisplay(project)}</TableCell>
-                        <TableCell>{project.owner}</TableCell>
-                        <TableCell>投入金额(万元)</TableCell>
-                        <TableCell>预计产出(万元)</TableCell>
-                        <TableCell>2025年计划(万元)</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[project.status]} variant="outline">
+                        <TableCell className="text-left px-3 py-3 font-medium align-middle">{project.name}</TableCell>
+                        <TableCell className="text-center px-2 py-3 align-middle">{project.owner}</TableCell>
+                        <TableCell className="text-center px-2 py-3 align-middle">{getProjectAffiliationDisplay(project)}</TableCell>
+                        <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
+                        <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
+                        <TableCell className="text-center px-2 py-3 align-middle">2025</TableCell>
+                        <TableCell className="text-center px-2 py-3 align-middle">
+                          <Badge className={statusColors[project.status]}>
                             {project.status}
                           </Badge>
                         </TableCell>
