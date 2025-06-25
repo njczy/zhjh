@@ -235,7 +235,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Upload className="mr-2 h-4 w-4" />
-              上传合同Excel
+                              上传合同
             </Button>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                     <div className="flex flex-col items-center space-y-2">
                       <FileSpreadsheet className="h-12 w-12 text-gray-300" />
                       <p className="text-lg">暂无合同数据</p>
-                      <p className="text-sm text-gray-400">请点击"上传合同Excel"按钮上传合同信息</p>
+                      <p className="text-sm text-gray-400">请点击"上传合同"按钮上传合同信息</p>
                     </div>
                   </TableCell>
                 </TableRow>

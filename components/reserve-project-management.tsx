@@ -1077,7 +1077,7 @@ function ReserveProjectManagementWithParams() {
                       className="bg-green-600 text-white hover:bg-green-700"
                       onClick={() => document.getElementById('file-upload')?.click()}
                     >
-                      <FileUp className="mr-2 h-4 w-4" /> 批量导入Excel
+                      <FileUp className="mr-2 h-4 w-4" /> 批量导入
                     </Button>
                   </div>
                 )}
