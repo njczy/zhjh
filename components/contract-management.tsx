@@ -12,7 +12,8 @@ import {
   Trash2,
   Search,
   Eye,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Link as LinkIcon
 } from "lucide-react"
 import {
   Dialog,
@@ -26,22 +27,25 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getProjects, type Project, getContracts, addContract, updateContract, deleteContract, bindProjectToContract, type Contract } from "@/lib/data"
 
-// 合同接口定义
-interface Contract {
-  id: string
-  contractNumber: string
-  contractName: string
-  contractType: string
-  signDate: string
-  amount: number
-  supplier: string
-  department: string
-  status: string
-  excelFileName: string
-  uploadTime: string
-  uploader: string
-}
+// 合同接口定义已移到 lib/data.ts 中
+// interface Contract {
+//   id: string
+//   contractNumber: string
+//   contractName: string
+//   contractType: string
+//   signDate: string
+//   amount: number
+//   supplier: string
+//   department: string
+//   status: string
+//   excelFileName: string
+//   uploadTime: string
+//   uploader: string
+//   boundProjectIds?: string[] // 绑定的项目ID列表
+// }
 
 interface ContractManagementProps {
   currentUser: {
@@ -62,40 +66,113 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
   const [isUploading, setIsUploading] = useState(false)
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  
+  // 新增：项目绑定相关状态
+  const [projects, setProjects] = useState<Project[]>([])
+  const [isBindProjectDialogOpen, setIsBindProjectDialogOpen] = useState(false)
+  const [contractToBindProject, setContractToBindProject] = useState<Contract | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("")
 
-  // 模拟数据
+  // 加载合同数据
   useEffect(() => {
-    const mockContracts: Contract[] = [
-      {
-        id: "1",
-        contractNumber: "HT-2024-001",
-        contractName: "办公设备采购合同",
-        contractType: "采购合同",
-        signDate: "2024-01-15",
-        amount: 150000,
-        supplier: "北京科技有限公司",
-        department: "行政部",
-        status: "已签署",
-        excelFileName: "办公设备采购合同清单.xlsx",
-        uploadTime: "2024-01-15 10:30:00",
-        uploader: "张三"
-      },
-      {
-        id: "2",
-        contractNumber: "HT-2024-002", 
-        contractName: "软件服务合同",
-        contractType: "服务合同",
-        signDate: "2024-01-10",
-        amount: 200000,
-        supplier: "上海软件科技公司",
-        department: "信息部",
-        status: "执行中",
-        excelFileName: "软件服务合同清单.xlsx",
-        uploadTime: "2024-01-10 14:20:00",
-        uploader: "李四"
+    const loadContracts = async () => {
+      try {
+        setLoading(true)
+        let contractsData = await getContracts()
+        
+        // 如果客户端localStorage中没有合同数据，尝试从服务器初始化
+        if (!contractsData || contractsData.length === 0) {
+          console.log('客户端没有合同数据，尝试从服务器初始化...')
+          try {
+            const response = await fetch('/api/initialize-data', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              console.log('服务器数据初始化成功:', result)
+              
+              // 如果API返回了合同数据，直接使用并同步到localStorage
+              if (result.fullData && result.fullData.contracts && result.fullData.contracts.length > 0) {
+                contractsData = result.fullData.contracts
+                // 同步到localStorage
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('contracts', JSON.stringify(result.fullData.contracts))
+                }
+                console.log('合同数据已同步到客户端:', contractsData)
+              } else {
+                // 重新获取合同数据
+                contractsData = await getContracts()
+                console.log('重新获取的合同数据:', contractsData)
+              }
+            } else {
+              console.error('服务器数据初始化失败')
+            }
+          } catch (initError) {
+            console.error('初始化数据请求失败:', initError)
+          }
+        }
+        
+        setContracts(contractsData || [])
+      } catch (error) {
+        console.error('加载合同数据失败:', error)
+        alert('加载合同数据失败，请刷新页面重试')
+      } finally {
+        setLoading(false)
       }
-    ]
-    setContracts(mockContracts)
+    }
+    loadContracts()
+  }, [])
+
+  // 加载项目数据
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        let allProjects = await getProjects()
+        
+        // 如果没有项目数据或者没有"下达"状态的项目，尝试初始化数据
+        const deliveredProjects = allProjects.filter(project => project.status === "下达")
+        if (deliveredProjects.length === 0) {
+          console.log('没有找到状态为"下达"的项目，尝试初始化数据...')
+          try {
+            const response = await fetch('/api/initialize-data', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              console.log('项目数据初始化成功:', result)
+              
+              // 如果API返回了项目数据，使用返回的数据
+              if (result.fullData && result.fullData.projects && result.fullData.projects.length > 0) {
+                allProjects = result.fullData.projects
+                console.log('使用API返回的项目数据:', allProjects)
+              } else {
+                // 重新获取项目数据
+                allProjects = await getProjects()
+                console.log('重新获取的项目数据:', allProjects)
+              }
+            }
+          } catch (initError) {
+            console.error('初始化项目数据失败:', initError)
+          }
+        }
+        
+        // 只获取状态为"下达"的项目
+        const finalDeliveredProjects = allProjects.filter(project => project.status === "下达")
+        setProjects(finalDeliveredProjects)
+        console.log('最终加载的下达状态项目:', finalDeliveredProjects)
+      } catch (error) {
+        console.error('加载项目数据失败:', error)
+      }
+    }
+    loadProjects()
   }, [])
 
   // 过滤合同
@@ -136,25 +213,24 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
     try {
       await new Promise(resolve => setTimeout(resolve, 3000))
       
-      const newContracts: Contract[] = [
-        {
-          id: Date.now().toString(),
-          contractNumber: `HT-2024-${String(contracts.length + 1).padStart(3, '0')}`,
-          contractName: "从Excel解析的合同名称",
-          contractType: "采购合同",
-          signDate: format(new Date(), "yyyy-MM-dd"),
-          amount: 100000,
-          supplier: "Excel中的供应商",
-          department: currentUser.department || "默认部门",
-          status: "待审批",
-          excelFileName: uploadingFile.name,
-          uploadTime: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-          uploader: currentUser.name
-        }
-      ]
+      const newContract: Omit<Contract, "id"> = {
+        contractNumber: `HT-2024-${String(contracts.length + 1).padStart(3, '0')}`,
+        contractName: "从Excel解析的合同名称",
+        contractType: "采购合同",
+        signDate: format(new Date(), "yyyy-MM-dd"),
+        amount: 100000,
+        supplier: "Excel中的供应商",
+        department: currentUser.department || "默认部门",
+        status: "待审批",
+        excelFileName: uploadingFile.name,
+        uploadTime: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+        uploader: currentUser.name,
+        boundProjectId: undefined
+      }
 
-      setContracts(prev => [...newContracts, ...prev])
-      alert(`成功从Excel文件解析出 ${newContracts.length} 个合同！`)
+      const addedContract = await addContract(newContract)
+      setContracts(prev => [addedContract, ...prev])
+      alert(`成功从Excel文件解析出合同信息！`)
       
       setIsUploadDialogOpen(false)
       setUploadingFile(null)
@@ -179,11 +255,84 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
   // 删除合同
   const handleDeleteContract = async (contractId: string) => {
     try {
-      setContracts(prev => prev.filter(contract => contract.id !== contractId))
-      alert('合同删除成功！')
+      const success = await deleteContract(contractId)
+      if (success) {
+        setContracts(prev => prev.filter(contract => contract.id !== contractId))
+        alert('合同删除成功！')
+      } else {
+        alert('合同删除失败，请重试')
+      }
     } catch (error) {
       alert('合同删除失败，请重试')
     }
+  }
+
+  // 新增：处理绑定项目
+  const handleBindProject = (contract: Contract) => {
+    setContractToBindProject(contract)
+    setSelectedProjectId(contract.boundProjectId || "")
+    setIsBindProjectDialogOpen(true)
+  }
+
+  // 新增：确认绑定项目
+  const handleConfirmBindProject = async () => {
+    if (!contractToBindProject) return
+
+    try {
+      const success = await bindProjectToContract(contractToBindProject.id, selectedProjectId)
+      if (success) {
+        // 更新本地状态
+        setContracts(prev => 
+          prev.map(contract => 
+            contract.id === contractToBindProject.id 
+              ? { ...contract, boundProjectId: selectedProjectId }
+              : contract
+          )
+        )
+        
+        const projectName = projects.find(p => p.id === selectedProjectId)?.name || "未知项目"
+        alert(`成功为合同 "${contractToBindProject.contractName}" 绑定了项目 "${projectName}"！`)
+        setIsBindProjectDialogOpen(false)
+        setContractToBindProject(null)
+        setSelectedProjectId("")
+      } else {
+        alert('绑定项目失败，请重试')
+      }
+    } catch (error) {
+      alert('绑定项目失败，请重试')
+    }
+  }
+
+  // 新增：获取绑定项目状态
+  const getBoundProjectStatus = (boundProjectId?: string): string => {
+    if (!boundProjectId) {
+      return "未绑定"
+    }
+    
+    // 检查是否有绑定的项目（只考虑状态为"下达"的项目）
+    const boundProject = projects.find(project => 
+      project.id === boundProjectId && project.status === "下达"
+    )
+    
+    if (boundProject) {
+      return "已绑定"
+    } else {
+      return "未绑定"
+    }
+  }
+
+  // 新增：获取绑定项目名称
+  const getBoundProjectNames = (boundProjectId?: string): string => {
+    if (!boundProjectId) {
+      return "无"
+    }
+    
+    const boundProject = projects.find(project => project.id === boundProjectId)
+    if (!boundProject) {
+      return "项目已删除"
+    }
+    
+    return boundProject.name
   }
 
   // 格式化金额
@@ -194,6 +343,11 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
   // 获取状态样式
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case '已绑定':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{status}</Badge>
+      case '未绑定':
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>
+      // 保留原有状态样式（用于合同详情对话框）
       case '已签署':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{status}</Badge>
       case '执行中':
@@ -289,7 +443,10 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                 <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-[80px] align-middle">
                   状态
                 </TableHead>
-                <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-[120px] align-middle">
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-[150px] align-middle">
+                  绑定项目
+                </TableHead>
+                <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-[150px] align-middle">
                   操作
                 </TableHead>
               </TableRow>
@@ -297,7 +454,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
             <TableBody>
               {filteredContracts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-gray-500 py-12">
+                  <TableCell colSpan={10} className="text-center text-gray-500 py-12">
                     <div className="flex flex-col items-center space-y-2">
                       <FileSpreadsheet className="h-12 w-12 text-gray-300" />
                       <p className="text-lg">暂无合同数据</p>
@@ -334,7 +491,12 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                       <span className="text-sm text-gray-700">{contract.department}</span>
                     </TableCell>
                     <TableCell className="text-center px-3 py-2 align-middle">
-                      {getStatusBadge(contract.status)}
+                      {getStatusBadge(getBoundProjectStatus(contract.boundProjectId))}
+                    </TableCell>
+                    <TableCell className="text-center px-3 py-2 align-middle">
+                                      <div className="text-sm text-gray-700 truncate max-w-[150px]" title={getBoundProjectNames(contract.boundProjectId)}>
+                  {getBoundProjectNames(contract.boundProjectId)}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center px-3 py-2 align-middle">
                       <div className="flex justify-center space-x-1">
@@ -346,6 +508,15 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           详情
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleBindProject(contract)}
+                          className="h-7 px-2 text-xs text-orange-600 border-orange-600 hover:bg-orange-50"
+                        >
+                          <LinkIcon className="h-3 w-3 mr-1" />
+                          绑定
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -488,12 +659,129 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                   <Label className="text-sm font-medium text-gray-700">上传人</Label>
                   <p className="mt-1 text-sm text-gray-900">{selectedContract.uploader}</p>
                 </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-gray-700">绑定项目</Label>
+                  {selectedContract.boundProjectId ? (
+                    <div className="mt-1">
+                      {(() => {
+                        const project = projects.find(p => p.id === selectedContract.boundProjectId)
+                        return project ? (
+                          <div className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                            {project.name} ({project.center || project.department})
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-sm text-gray-500">绑定的项目已删除</p>
+                        )
+                      })()}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-500">未绑定项目</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
               关闭
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 绑定项目对话框 */}
+      <Dialog open={isBindProjectDialogOpen} onOpenChange={setIsBindProjectDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>绑定项目</DialogTitle>
+            <DialogDescription>
+              为合同 "{contractToBindProject?.contractName}" 绑定状态为"下达"的项目。一个合同只能绑定一个项目。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                可绑定项目列表 (状态为"下达"的项目)
+              </Label>
+              {projects.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>暂无状态为"下达"的项目可供绑定</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px] border rounded-md">
+                  <div className="p-4 space-y-2">
+                    {projects.map((project) => (
+                      <div key={project.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="selectedProject"
+                          id={`project-${project.id}`}
+                          checked={selectedProjectId === project.id}
+                          onChange={() => setSelectedProjectId(project.id)}
+                          className="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <label 
+                            htmlFor={`project-${project.id}`}
+                            className="block text-sm font-medium text-gray-900 cursor-pointer"
+                          >
+                            {project.name}
+                          </label>
+                          <div className="mt-1 text-xs text-gray-500 space-y-1">
+                            <p>归属：{project.center || project.department}</p>
+                            <p>负责人：{project.owner}</p>
+                            <p>项目类型：{project.projectType || "未设置"}</p>
+                            {project.description && (
+                              <p className="truncate" title={project.description}>
+                                描述：{project.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                          {project.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+            
+            {selectedProjectId && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-blue-800">
+                  已选择项目：
+                </p>
+                <div className="mt-2">
+                  {(() => {
+                    const project = projects.find(p => p.id === selectedProjectId)
+                    return project ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {project.name}
+                      </Badge>
+                    ) : null
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsBindProjectDialogOpen(false)
+                setContractToBindProject(null)
+                setSelectedProjectId("")
+              }}
+            >
+              取消
+            </Button>
+            <Button 
+              onClick={handleConfirmBindProject}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              确认绑定{selectedProjectId ? " (1)" : ""}
             </Button>
           </DialogFooter>
         </DialogContent>

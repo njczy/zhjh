@@ -1,17 +1,18 @@
 "use client"
 
-import React from 'react'
-import ReserveProjectManagement from "@/components/reserve-project-management"
+import ProgressReimbursementManagement from "@/components/progress-reimbursement-management"
 import OperationGuide from "@/components/operation-guide"
 import { Button } from "@/components/ui/button"
 import { BookOpen } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useUser } from "@/contexts/UserContext"
 
-export default function ReserveProjectsPage() {
+export default function ProgressManagementPage() {
+  const { currentUser } = useUser()
   return (
-    <div className="w-full mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">储备项目管理</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex items-center justify-between mb-6 p-6 pb-0">
+        <h1 className="text-3xl font-bold tracking-tight">进度管理</h1>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2">
@@ -21,15 +22,15 @@ export default function ReserveProjectsPage() {
           </DialogTrigger>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>储备及综合计划操作说明</DialogTitle>
+              <DialogTitle>进度管理操作说明</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-              <OperationGuide defaultModule="reserve" />
+              <OperationGuide defaultModule="progress" />
             </div>
           </DialogContent>
         </Dialog>
       </div>
-      <ReserveProjectManagement />
+      <ProgressReimbursementManagement currentUser={currentUser} />
     </div>
   )
 } 

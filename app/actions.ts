@@ -22,6 +22,7 @@ import {
   getApprovalReports,
   addApprovalReport,
   getApprovalReportsByGroup,
+  getContracts,
   type Project,
   type MonthlyReview,
   type Approval,
@@ -508,17 +509,21 @@ export async function handleReviewRejectionAction(
   }
 }
 
-
-
 // 数据初始化的Server Action
 export async function initializeDataAction(): Promise<{ success: boolean; message: string }> {
   try {
-    const result = initializeData()
+    initializeData()
+    
+    // 获取初始化后的数据进行验证
+    const projects = await getProjects()
+    const contracts = await getContracts()
+    
     return { 
       success: true, 
-      message: `数据初始化成功！已恢复 ${result.projects.length} 个项目，${result.approvals.length} 个审批记录，${result.monthlyReviews.length} 个月度评审记录。` 
+      message: `数据初始化成功！已恢复 ${projects.length} 个项目，${contracts.length} 个合同。` 
     }
   } catch (error) {
+    console.error('数据初始化失败:', error)
     return { success: false, message: "数据初始化失败" }
   }
 }

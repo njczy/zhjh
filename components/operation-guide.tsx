@@ -17,7 +17,13 @@ import {
   Calendar,
   ClipboardCheck,
   ArrowRight,
-  Lightbulb
+  Lightbulb,
+  Gavel,
+  ShoppingCart,
+  FileSignature,
+  TrendingUp,
+  Calculator,
+  ChevronDown
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
 
@@ -283,6 +289,207 @@ const OPERATION_WORKFLOWS = {
         tips: "审批要考虑院整体发展目标"
       }
     ]
+  },
+  "招标采购管理": {
+    "中心专职": [
+      {
+        step: 1,
+        title: "提交采购需求",
+        description: "根据项目需要提交采购申请",
+        details: [
+          "在采购管理页面点击「新增采购需求」",
+          "填写采购物品清单和技术要求",
+          "上传相关技术规范文档",
+          "选择采购方式：公开招标、邀请招标或询价采购",
+          "设置预算金额和交付时间"
+        ],
+        tips: "采购需求要详细准确，避免后期变更"
+      },
+      {
+        step: 2,
+        title: "跟踪采购进度",
+        description: "关注采购流程各个环节",
+        details: [
+          "查看招标公告发布状态",
+          "关注投标文件接收情况",
+          "参与技术评审（如需要）",
+          "配合商务谈判工作"
+        ],
+        tips: "保持与采购部门的密切沟通"
+      }
+    ],
+    "部门专职": [
+      {
+        step: 1,
+        title: "采购计划制定",
+        description: "统筹全院采购需求，制定采购计划",
+        details: [
+          "收集各中心采购需求",
+          "分析采购紧急程度和重要性",
+          "制定年度和季度采购计划",
+          "协调批量采购和框架协议",
+          "安排采购时间表"
+        ],
+        tips: "合理规划采购时间，避免集中采购"
+      },
+      {
+        step: 2,
+        title: "招标组织实施",
+        description: "组织和管理招标采购流程",
+        details: [
+          "编制招标文件和技术规范",
+          "发布招标公告",
+          "组织现场踏勘和答疑会",
+          "接收和管理投标文件",
+          "组织开标评标会议",
+          "确定中标供应商并签订合同"
+        ],
+        tips: "严格按照招标流程执行，确保公平公正"
+      }
+    ]
+  },
+  "合同管理": {
+    "中心专职": [
+      {
+        step: 1,
+        title: "查看合同信息",
+        description: "查看本中心相关的合同详情",
+        details: [
+          "在合同管理页面查看合同列表",
+          "使用搜索功能快速定位合同",
+          "查看合同执行状态和进度",
+          "下载合同文件和相关附件"
+        ],
+        tips: "定期关注合同执行情况"
+      },
+      {
+        step: 2,
+        title: "合同执行跟踪",
+        description: "跟踪合同履行和进度报销",
+        details: [
+          "提交里程碑完成证明",
+          "申请进度报销",
+          "配合合同验收工作",
+          "及时反馈执行中的问题"
+        ],
+        tips: "按时提交各类执行材料"
+      }
+    ],
+    "部门专职": [
+      {
+        step: 1,
+        title: "合同录入管理",
+        description: "录入和管理全院合同信息",
+        details: [
+          "上传合同Excel文件进行解析",
+          "完善合同基本信息",
+          "绑定合同到相关项目",
+          "设置合同关键节点和提醒",
+          "建立合同档案"
+        ],
+        tips: "确保合同信息录入完整准确"
+      },
+      {
+        step: 2,
+        title: "合同执行监管",
+        description: "监督合同执行和风险管控",
+        details: [
+          "定期检查合同执行进度",
+          "审核进度报销申请",
+          "处理合同变更和索赔",
+          "组织合同验收工作",
+          "建立供应商评价体系"
+        ],
+        tips: "建立合同台账，加强过程管控"
+      }
+    ]
+  },
+  "进度管理": {
+    "中心专职": [
+      {
+        step: 1,
+        title: "创建进度报销",
+        description: "根据合同执行情况申请进度报销",
+        details: [
+          "选择已绑定的合同",
+          "选择进度类型：里程碑完成或百分比完成",
+          "填写完成情况说明",
+          "上传验收证明和发票文件",
+          "提交部门经理审批"
+        ],
+        tips: "确保所有附件材料齐全有效"
+      },
+      {
+        step: 2,
+        title: "跟踪审批进度",
+        description: "关注报销审批状态",
+        details: [
+          "在待办事项中查看审批进度",
+          "及时响应审批人的意见",
+          "补充或修改相关材料",
+          "关注财务审批结果"
+        ],
+        tips: "保持与审批人员的沟通"
+      }
+    ],
+    "部门领导": [
+      {
+        step: 1,
+        title: "部门经理审批",
+        description: "审批本部门的进度报销申请",
+        details: [
+          "查看报销申请详情",
+          "核实项目执行情况",
+          "检查附件材料完整性",
+          "给出审批意见",
+          "转交财务审批或驳回修改"
+        ],
+        tips: "重点关注报销金额与完成进度的匹配性"
+      }
+    ]
+  },
+  "结算管理": {
+    "部门专职": [
+      {
+        step: 1,
+        title: "开票管理",
+        description: "管理合同开票和回款",
+        details: [
+          "查看自动触发的开票提醒",
+          "手动创建开票记录",
+          "录入发票号码和开票金额",
+          "跟踪发票状态和回款情况",
+          "处理逾期账款预警"
+        ],
+        tips: "及时处理开票，关注回款风险"
+      },
+      {
+        step: 2,
+        title: "银行对账",
+        description: "进行银行流水对账工作",
+        details: [
+          "导入银行流水文件",
+          "执行智能匹配算法",
+          "人工核实匹配结果",
+          "处理异常和差异记录",
+          "生成对账报告"
+        ],
+        tips: "定期进行对账，及时发现差异"
+      },
+      {
+        step: 3,
+        title: "项目结算",
+        description: "统计和分析项目结算情况",
+        details: [
+          "查看项目结算汇总",
+          "分析回款率和逾期情况",
+          "生成结算统计报表",
+          "发送催款通知",
+          "跟踪欠款回收进度"
+        ],
+        tips: "建立结算台账，加强资金管理"
+      }
+    ]
   }
 }
 
@@ -317,6 +524,36 @@ const FAQ_DATA = [
     question: "如何处理项目冲突？",
     answer: "项目冲突由部门领导协调处理，必要时上报分管院领导决策。涉及资源分配的问题优先保证重点项目。",
     roles: ["部门领导", "分管院领导"]
+  },
+  {
+    question: "如何提交采购需求？",
+    answer: "中心专职可以在采购管理页面提交采购需求，填写详细的采购清单和技术要求，选择合适的采购方式。",
+    roles: ["中心专职"]
+  },
+  {
+    question: "招标流程是怎样的？",
+    answer: "招标流程包括：编制招标文件→发布招标公告→接收投标文件→开标评标→确定中标人→签订合同。",
+    roles: ["部门专职"]
+  },
+  {
+    question: "如何绑定合同到项目？",
+    answer: "在合同管理页面，点击合同的「绑定」按钮，选择状态为「下达」的项目，可以一个合同绑定多个项目。",
+    roles: ["部门专职"]
+  },
+  {
+    question: "进度报销需要哪些材料？",
+    answer: "进度报销需要提供：里程碑完成证明、验收报告、发票文件等，确保材料齐全有效。",
+    roles: ["中心专职"]
+  },
+  {
+    question: "银行对账如何操作？",
+    answer: "导入银行流水文件后，系统会智能匹配收款记录，需要人工核实匹配结果并处理异常记录。",
+    roles: ["部门专职"]
+  },
+  {
+    question: "逾期账款如何处理？",
+    answer: "系统会自动预警逾期账款，需要及时发送催款通知，跟踪回收进度，必要时采取法律措施。",
+    roles: ["部门专职"]
   }
 ]
 
@@ -351,23 +588,107 @@ const OPERATION_TIPS = {
     "重点关注重大项目的风险和收益",
     "确保决策符合政策要求和发展需要",
     "指导项目实施的总体方向"
+  ],
+  // 新增模块的操作技巧
+  "招标采购技巧": [
+    "采购需求要详细准确，包含完整的技术规格",
+    "合理选择采购方式，平衡效率和竞争性",
+    "建立供应商评价档案，维护长期合作关系",
+    "关注采购成本控制和质量保证"
+  ],
+  "合同管理技巧": [
+    "建立完整的合同台账，定期更新状态",
+    "设置关键节点提醒，避免遗漏重要事项",
+    "加强履约过程监管，及时发现问题",
+    "重视合同变更管理，控制项目风险"
+  ],
+  "进度管理技巧": [
+    "建立里程碑管理体系，明确关键节点",
+    "及时提交进度材料，避免影响报销时效",
+    "保持与相关部门的沟通协调",
+    "做好进度档案管理，便于后续查询"
+  ],
+  "结算管理技巧": [
+    "建立开票提醒机制，确保及时开票",
+    "定期进行银行对账，及时发现差异",
+    "关注回款风险，建立预警机制",
+    "加强逾期账款管理，提高回收率"
   ]
 }
 
-export default function OperationGuide() {
+// 模块配置
+const MODULE_CONFIG = {
+  "reserve": {
+    name: "储备及综合计划",
+    icon: FileText,
+    color: "text-blue-600"
+  },
+  "bidding": {
+    name: "招标采购管理",
+    icon: Gavel,
+    color: "text-purple-600"
+  },
+  "contract": {
+    name: "合同管理",
+    icon: FileSignature,
+    color: "text-green-600"
+  },
+  "progress": {
+    name: "进度管理",
+    icon: TrendingUp,
+    color: "text-orange-600"
+  },
+  "settlement": {
+    name: "结算管理",
+    icon: Calculator,
+    color: "text-red-600"
+  }
+}
+
+interface OperationGuideProps {
+  defaultModule?: string
+}
+
+export default function OperationGuide({ defaultModule = "reserve" }: OperationGuideProps) {
   const { currentUser } = useUser()
   const [activeTab, setActiveTab] = useState("overview")
+  const [selectedModule, setSelectedModule] = useState(defaultModule)
   
   const currentRole = currentUser?.role || "中心专职"
   const roleConfig = ROLE_PERMISSIONS[currentRole as keyof typeof ROLE_PERMISSIONS]
+  const currentModule = MODULE_CONFIG[selectedModule as keyof typeof MODULE_CONFIG]
+  const ModuleIcon = currentModule.icon
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
           <BookOpen className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">储备及综合计划模块操作说明</h1>
+          <h1 className="text-3xl font-bold text-gray-900">系统操作说明</h1>
         </div>
+        
+        {/* 模块选择器 */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">选择操作模块</label>
+          <div className="relative">
+            <select 
+              value={selectedModule}
+              onChange={(e) => setSelectedModule(e.target.value)}
+              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {Object.entries(MODULE_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>{config.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3 mb-4">
+          <ModuleIcon className={`h-6 w-6 ${currentModule.color}`} />
+          <h2 className="text-2xl font-semibold text-gray-800">{currentModule.name}操作说明</h2>
+        </div>
+        
         <div className="flex items-center gap-2">
           <Badge className={roleConfig?.color}>
             当前角色：{roleConfig?.name}
@@ -386,6 +707,7 @@ export default function OperationGuide() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
+          {selectedModule === "reserve" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -470,7 +792,250 @@ export default function OperationGuide() {
                 </div>
               </CardContent>
             </Card>
+            </div>
+          )}
+          
+          {selectedModule === "bidding" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gavel className="h-5 w-5" />
+                    招标采购流程
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    招标采购管理规范全院采购行为，通过公开透明的招标流程确保采购质量和成本控制。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">需求申报与计划制定</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">招标文件编制</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">开标评标管理</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    供应商管理
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    建立完善的供应商评价体系，维护供应商库，提升采购效率和质量。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">供应商资质审查</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">履约能力评估</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">动态评价机制</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          {selectedModule === "contract" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSignature className="h-5 w-5" />
+                    合同全生命周期管理
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    实现合同从签订到履约完成的全过程数字化管理，提升合同管理效率和风险控制能力。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">合同信息管理</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">项目绑定关联</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">履约进度跟踪</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    风险预警机制
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    建立智能化的合同风险预警体系，及时发现和处理合同履约风险。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">到期提醒</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">履约异常监控</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">资金风险预警</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          {selectedModule === "progress" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    进度报销管理
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    规范项目进度报销流程，实现报销申请、审批、财务处理的全流程数字化管理。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">多种报销类型支持</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">多级审批流程</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">附件管理</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5" />
+                    审批流程优化
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    建立高效的审批机制，确保报销审批的及时性和准确性。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">智能路由分发</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">进度实时跟踪</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">自动提醒机制</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          {selectedModule === "settlement" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calculator className="h-5 w-5" />
+                    开票回款管理
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    实现发票开具、回款跟踪的自动化管理，提升资金管理效率。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">自动开票提醒</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">回款状态跟踪</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">逾期预警机制</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    银行对账系统
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    智能化银行流水对账，提升财务管理精度和效率。
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">智能匹配算法</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">异常处理机制</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">对账报告生成</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          <div className="mt-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -510,8 +1075,15 @@ export default function OperationGuide() {
             </Alert>
 
             {Object.entries(OPERATION_WORKFLOWS).map(([module, workflows]) => {
-              const currentRoleWorkflow = workflows[currentRole as keyof typeof workflows]
-              if (!currentRoleWorkflow) return null
+              // 只显示当前选择的模块
+              if (selectedModule === "reserve" && module !== "储备项目管理") return null
+              if (selectedModule === "bidding" && module !== "招标采购管理") return null
+              if (selectedModule === "contract" && module !== "合同管理") return null
+              if (selectedModule === "progress" && module !== "进度管理") return null
+              if (selectedModule === "settlement" && module !== "结算管理") return null
+              
+              const currentRoleWorkflow = workflows[currentRole as keyof typeof workflows] as any[]
+              if (!currentRoleWorkflow || currentRoleWorkflow.length === 0) return null
 
               return (
                 <Card key={module}>
@@ -662,11 +1234,13 @@ export default function OperationGuide() {
         </TabsContent>
 
         <TabsContent value="tips" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 角色相关技巧 */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                操作技巧与建议
+                  角色操作技巧
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -682,6 +1256,44 @@ export default function OperationGuide() {
               </div>
             </CardContent>
           </Card>
+            
+            {/* 模块相关技巧 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  模块操作技巧
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    let moduleTips: string[] = []
+                    if (selectedModule === "reserve") {
+                      moduleTips = OPERATION_TIPS[currentRole as keyof typeof OPERATION_TIPS] || []
+                    } else if (selectedModule === "bidding") {
+                      moduleTips = OPERATION_TIPS["招标采购技巧" as keyof typeof OPERATION_TIPS] || []
+                    } else if (selectedModule === "contract") {
+                      moduleTips = OPERATION_TIPS["合同管理技巧" as keyof typeof OPERATION_TIPS] || []
+                    } else if (selectedModule === "progress") {
+                      moduleTips = OPERATION_TIPS["进度管理技巧" as keyof typeof OPERATION_TIPS] || []
+                    } else if (selectedModule === "settlement") {
+                      moduleTips = OPERATION_TIPS["结算管理技巧" as keyof typeof OPERATION_TIPS] || []
+                    }
+                    
+                    return moduleTips.map((tip, index) => (
+                      <Alert key={index}>
+                        <Lightbulb className="h-4 w-4" />
+                        <AlertDescription>
+                          {tip}
+                        </AlertDescription>
+                      </Alert>
+                    ))
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
