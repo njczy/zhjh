@@ -1,0 +1,101 @@
+# 2核2G服务器优化版 Dockerfile
+# 针对低内存环境的特殊优化配置
+
+# 1. Builder Stage - 使用轻量级基础镜像
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# 设置内存限制环境变量（适配2G内存服务器）
+ENV NODE_OPTIONS="--max-old-space-size=1536 --max-semi-space-size=256 --optimize-for-size"
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# 使用国内镜像源加速
+RUN npm config set registry https://registry.npmmirror.com
+
+# 安装 pnpm
+RUN npm install -g pnpm --registry https://registry.npmmirror.com
+
+# 复制依赖文件并安装
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm config set registry https://registry.npmmirror.com && \
+    pnpm install --frozen-lockfile --prod=false
+
+# 复制源代码
+COPY . .
+
+# 创建优化的 Next.js 配置（针对低内存环境）
+RUN echo 'const nextConfig = {' > next.config.low-memory.mjs && \
+    echo '  output: "standalone",' >> next.config.low-memory.mjs && \
+    echo '  eslint: { ignoreDuringBuilds: true },' >> next.config.low-memory.mjs && \
+    echo '  typescript: { ignoreBuildErrors: true },' >> next.config.low-memory.mjs && \
+    echo '  experimental: { workerThreads: false, cpus: 1 },' >> next.config.low-memory.mjs && \
+    echo '  images: { unoptimized: true },' >> next.config.low-memory.mjs && \
+    echo '  generateBuildId: async () => "low-memory-build",' >> next.config.low-memory.mjs && \
+    echo '  productionBrowserSourceMaps: false' >> next.config.low-memory.mjs && \
+    echo '}' >> next.config.low-memory.mjs && \
+    echo 'export default nextConfig' >> next.config.low-memory.mjs
+
+# 使用优化配置构建（分步骤以减少内存峰值）
+RUN echo "🔧 开始低内存优化构建..." && \
+    # 清理缓存
+    rm -rf .next node_modules/.cache && \
+    # 使用优化配置构建
+    NEXT_CONFIG_FILE=next.config.low-memory.mjs timeout 2400 pnpm run build || \
+    (echo "❌ 构建失败，尝试降级构建..." && \
+     NODE_OPTIONS="--max-old-space-size=1024" NEXT_CONFIG_FILE=next.config.low-memory.mjs pnpm run build)
+
+# 手动复制必要文件到 standalone 目录
+RUN if [ -d "./.next/standalone" ]; then \
+      echo "✅ Standalone 构建成功"; \
+      cp -r ./public ./.next/standalone/public 2>/dev/null || echo "Public 目录已存在"; \
+      cp -r ./.next/static ./.next/standalone/.next/static 2>/dev/null || echo "Static 目录已存在"; \
+    else \
+      echo "⚠️  Standalone 构建失败，使用备用方案"; \
+      mkdir -p ./.next/standalone; \
+      cp -r ./public ./.next/standalone/public; \
+      cp -r ./.next ./.next/standalone/.next; \
+      cp ./package.json ./.next/standalone/; \
+      cp ./next.config.low-memory.mjs ./.next/standalone/next.config.mjs; \
+    fi
+
+# 2. Runner Stage - 使用最小化运行时镜像
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# 设置运行时环境变量
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
+# 创建非root用户以提高安全性
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# 安装运行时依赖
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install -g pnpm --registry https://registry.npmmirror.com
+
+# 复制构建产物
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./
+
+# 安装生产依赖（如果需要）
+RUN if [ -f "./package.json" ]; then \
+      pnpm config set registry https://registry.npmmirror.com && \
+      pnpm install --prod --ignore-scripts --no-optional || \
+      echo "跳过依赖安装"; \
+    fi
+
+# 切换到非root用户
+USER nextjs
+
+# 暴露端口
+EXPOSE 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+
+# 启动应用
+CMD ["node", "server.js"] 
