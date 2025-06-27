@@ -15,6 +15,25 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# 检测Docker Compose命令
+DOCKER_COMPOSE_CMD=""
+detect_docker_compose() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="docker-compose"
+        log_info "检测到 docker-compose 命令"
+    elif docker compose version >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="docker compose"
+        log_info "检测到 docker compose 命令"
+    else
+        log_error "未找到 Docker Compose 命令！"
+        log_error "请安装 Docker Compose："
+        echo "  sudo apt install docker-compose-plugin"
+        echo "  或"
+        echo "  sudo apt install docker-compose"
+        exit 1
+    fi
+}
+
 # 日志函数
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -105,10 +124,13 @@ cleanup_swap() {
 prepare_environment() {
     log_info "准备部署环境..."
     
+    # 检测Docker Compose命令
+    detect_docker_compose
+    
     # 停止现有容器
     log_info "停止现有容器..."
-    sudo docker-compose -f docker-compose.low-memory.yml down 2>/dev/null || true
-    sudo docker-compose down 2>/dev/null || true
+    sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml down 2>/dev/null || true
+    sudo $DOCKER_COMPOSE_CMD down 2>/dev/null || true
     
     # 清理Docker资源
     log_info "清理Docker资源..."
@@ -177,8 +199,9 @@ EOF
     
     # 执行构建（带超时）
     log_info "开始Docker构建（预计15-30分钟）..."
+    log_info "使用命令: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml build --no-cache"
     
-    if timeout 2400 sudo docker-compose -f docker-compose.low-memory.yml build --no-cache; then
+    if timeout 2400 sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml build --no-cache; then
         log_success "构建成功完成"
     else
         BUILD_EXIT=$?
@@ -201,14 +224,14 @@ EOF
     
     # 启动服务
     log_info "启动应用服务..."
-    sudo docker-compose -f docker-compose.low-memory.yml up -d
+    sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml up -d
     
     # 等待服务启动
     log_info "等待服务启动..."
     sleep 30
     
     # 检查服务状态
-    if sudo docker-compose -f docker-compose.low-memory.yml ps | grep -q "Up"; then
+    if sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml ps | grep -q "Up"; then
         log_success "应用部署成功！"
         
         # 显示服务信息
@@ -218,12 +241,12 @@ EOF
         echo "   服务器IP访问: http://$(curl -s ifconfig.me 2>/dev/null || echo 'YOUR_SERVER_IP')"
         echo ""
         echo "🔍 服务状态："
-        sudo docker-compose -f docker-compose.low-memory.yml ps
+        sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml ps
         
     else
         log_error "应用启动失败"
         echo "📋 容器日志："
-        sudo docker-compose -f docker-compose.low-memory.yml logs --tail=50
+        sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs --tail=50
         exit 1
     fi
 }
