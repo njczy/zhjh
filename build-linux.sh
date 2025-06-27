@@ -21,7 +21,7 @@ sudo docker system prune -f --volumes 2>/dev/null || true
 export NODE_ENV=production
 export NEXT_TELEMETRY_DISABLED=1
 # 2G内存服务器：设置Node.js内存限制为1.5G，留出0.5G给系统
-export NODE_OPTIONS="--max-old-space-size=1536 --max-semi-space-size=256 --optimize-for-size"
+export NODE_OPTIONS="--max-old-space-size=1536 --max-semi-space-size=256"
 
 # 创建临时swap文件（如果内存不足）
 echo "💾 内存优化配置："

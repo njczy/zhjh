@@ -6,7 +6,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # 设置内存限制环境变量（适配2G内存服务器）
-ENV NODE_OPTIONS="--max-old-space-size=1536 --max-semi-space-size=256 --optimize-for-size"
+ENV NODE_OPTIONS="--max-old-space-size=1536 --max-semi-space-size=256"
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -40,10 +40,12 @@ RUN echo 'const nextConfig = {' > next.config.low-memory.mjs && \
 RUN echo "🔧 开始低内存优化构建..." && \
     # 清理缓存
     rm -rf .next node_modules/.cache && \
+    # 设置更严格的内存限制和垃圾回收优化
+    export NODE_OPTIONS="--max-old-space-size=1024 --max-semi-space-size=128 --gc-interval=100" && \
     # 使用优化配置构建
     NEXT_CONFIG_FILE=next.config.low-memory.mjs timeout 2400 pnpm run build || \
-    (echo "❌ 构建失败，尝试降级构建..." && \
-     NODE_OPTIONS="--max-old-space-size=1024" NEXT_CONFIG_FILE=next.config.low-memory.mjs pnpm run build)
+    (echo "❌ 构建失败，尝试最小内存构建..." && \
+     NODE_OPTIONS="--max-old-space-size=768 --max-semi-space-size=64" NEXT_CONFIG_FILE=next.config.low-memory.mjs pnpm run build)
 
 # 手动复制必要文件到 standalone 目录
 RUN if [ -d "./.next/standalone" ]; then \
