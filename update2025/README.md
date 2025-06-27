@@ -368,3 +368,234 @@ docker-compose up -d --build
 
 **最后更新**：2025年1月
 **维护者**：项目开发团队 
+
+# 项目更新部署说明
+
+## 📋 目录
+- [快速更新](#快速更新)
+- [构建问题解决](#构建问题解决)
+- [详细部署流程](#详细部署流程)
+- [网络配置](#网络配置)
+- [故障排除](#故障排除)
+
+## 🚀 快速更新
+
+### 标准更新（推荐）
+```bash
+# 标准更新流程
+sudo bash ./update2025/update.sh
+```
+
+### 优化更新（解决构建卡顿）
+```bash
+# 解决构建卡在 "Generating static pages" 的问题
+sudo bash ./update2025/quick-update-optimized.sh
+```
+
+## 🔧 构建问题解决
+
+### 问题：构建卡在 "Generating static pages"
+
+**症状:**
+- 构建进度停在 "Generating static pages (0/22)" 
+- 长时间无响应（超过 15 分钟）
+- 内存占用过高
+
+**根本原因:**
+1. **大量静态页面**: 项目包含多个复杂页面需要预渲染
+2. **服务端数据加载**: 构建时读取 data/ 目录下的 JSON 文件
+3. **内存不足**: 默认 Node.js 内存限制不够
+4. **依赖复杂**: 大量 UI 组件库依赖
+
+**解决方案:**
+
+#### 方案 1: 使用优化脚本（推荐）
+```bash
+# 运行构建问题修复脚本
+sudo bash ./update2025/fix-build-issues.sh
+
+# 然后使用优化更新
+sudo bash ./update2025/quick-update-optimized.sh
+```
+
+#### 方案 2: 手动优化
+```bash
+# 1. 清理缓存
+rm -rf .next node_modules/.cache
+sudo docker builder prune -f
+
+# 2. 设置环境变量
+export NODE_OPTIONS="--max-old-space-size=6144"
+export NEXT_TELEMETRY_DISABLED=1
+
+# 3. 使用优化配置构建
+cp next.config.build.mjs next.config.mjs
+npm run build
+```
+
+#### 方案 3: 分步构建
+```bash
+# 1. 先构建依赖
+npm ci --only=production
+
+# 2. 增加 swap（如果内存不足）
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 3. 监控构建过程
+./update2025/monitor-build.sh &
+
+# 4. 执行构建
+timeout 1800 npm run build
+```
+
+### 构建优化配置说明
+
+**内存优化:**
+- 增加 Node.js 堆内存: `--max-old-space-size=6144`
+- 增加半空间内存: `--max-semi-space-size=512`
+- 启用系统 swap 空间
+
+**构建优化:**
+- 跳过 TypeScript 类型检查
+- 跳过 ESLint 检查
+- 禁用遥测数据收集
+- 优化包分割策略
+
+**Docker 优化:**
+- 启用 BuildKit 并行构建
+- 使用多阶段构建
+- 优化镜像层缓存
+
+## 📊 监控工具
+
+### 构建过程监控
+```bash
+# 启动监控（在另一个终端）
+./update2025/monitor-build.sh
+```
+
+### 系统资源检查
+```bash
+# 检查内存
+free -h
+
+# 检查磁盘空间
+df -h
+
+# 检查 Docker 状态
+sudo docker system df
+```
+
+## ⚡ 性能调优建议
+
+### 服务器配置建议
+- **内存**: 最少 8GB，推荐 16GB+
+- **CPU**: 最少 4 核，推荐 8 核+
+- **磁盘**: 最少 20GB 可用空间
+- **网络**: 稳定的网络连接
+
+### 构建时间预期
+- **首次构建**: 15-30 分钟
+- **增量构建**: 8-15 分钟
+- **缓存构建**: 3-8 分钟
+
+### 构建阶段说明
+1. **依赖安装** (2-5 分钟): 下载 npm 包
+2. **TypeScript 编译** (3-8 分钟): 编译 TS 代码
+3. **静态页面生成** (5-15 分钟): 预渲染页面 ⚠️ 最容易卡住的阶段
+4. **资源优化** (1-3 分钟): 压缩和优化
+5. **Docker 打包** (2-5 分钟): 创建容器镜像
+
+## 🚨 故障排除
+
+### 常见问题解决
+
+#### 1. 构建超时
+```bash
+# 症状: 构建超过 30 分钟
+# 解决: 增加超时时间和内存
+export NODE_OPTIONS="--max-old-space-size=8192"
+timeout 3600 npm run build  # 1 小时超时
+```
+
+#### 2. 内存不足
+```bash
+# 症状: JavaScript heap out of memory
+# 解决: 增加虚拟内存
+sudo dd if=/dev/zero of=/swapfile bs=1G count=8
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+#### 3. 磁盘空间不足
+```bash
+# 清理 Docker 资源
+sudo docker system prune -af
+sudo docker volume prune -f
+
+# 清理 npm 缓存
+npm cache clean --force
+```
+
+#### 4. 网络连接问题
+```bash
+# 使用国内镜像
+npm config set registry https://registry.npmmirror.com
+```
+
+#### 5. 权限问题
+```bash
+# 修复 Docker 权限
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### 日志分析
+
+#### 查看构建日志
+```bash
+# Docker 构建日志
+sudo docker logs $(sudo docker ps -aq | head -1)
+
+# 系统日志
+journalctl -u docker -f
+```
+
+#### 构建进度追踪
+```bash
+# 实时监控构建输出
+tail -f /var/log/docker.log | grep -E "(Step|RUN|COPY|Generating)"
+```
+
+## 🔄 回滚机制
+
+### 快速回滚
+```bash
+# 回滚到上一个版本
+sudo docker tag zhjh-app:latest zhjh-app:rollback
+sudo docker-compose down
+sudo docker-compose up -d
+```
+
+### 保存当前版本
+```bash
+# 构建前备份
+sudo docker tag zhjh-app:latest zhjh-app:backup-$(date +%Y%m%d-%H%M%S)
+```
+
+## 📞 技术支持
+
+如果遇到构建问题，请提供以下信息：
+1. 错误日志
+2. 系统配置 (`free -h`, `df -h`)
+3. Docker 版本 (`docker --version`)
+4. Node.js 版本 (`node --version`)
+
+**联系方式:**
+- 查看日志: `sudo docker-compose logs app`
+- 系统状态: `sudo docker-compose ps`
+- 重启服务: `sudo docker-compose restart app` 
