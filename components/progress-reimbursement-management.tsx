@@ -19,13 +19,15 @@ import {
   Contract, 
   ProgressReimbursement, 
   PermissionMatrix,
+  Project,
   getContracts, 
   getProgressReimbursements,
   addProgressReimbursement,
   updateProgressReimbursement,
   approveProgressReimbursement,
   checkUserPermission,
-  getProgressReimbursementsByContract
+  getProgressReimbursementsByContract,
+  getProjects
 } from '@/lib/data'
 
 interface ProgressReimbursementManagementProps {
@@ -35,6 +37,7 @@ interface ProgressReimbursementManagementProps {
 export default function ProgressReimbursementManagement({ currentUser }: ProgressReimbursementManagementProps) {
   // 状态管理
   const [contracts, setContracts] = useState<Contract[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [reimbursements, setReimbursements] = useState<ProgressReimbursement[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -69,39 +72,49 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
   const canApproveDept = checkUserPermission(currentUser, PermissionMatrix.APPROVE_REIMBURSEMENT_DEPT)
   const canApproveFinance = checkUserPermission(currentUser, PermissionMatrix.APPROVE_REIMBURSEMENT_FINANCE)
 
+  // 判断合同是否已绑定项目（只有绑定了状态为"下达"的项目才算已绑定）
+  const isContractBound = (contract: Contract): boolean => {
+    if (!contract.boundProjectId) {
+      return false
+    }
+    
+    // 检查是否有绑定的项目且项目状态为"下达"
+    const boundProject = projects.find(project => 
+      project.id === contract.boundProjectId && project.status === "下达"
+    )
+    
+    return !!boundProject
+  }
+
   // 加载数据
   useEffect(() => {
     fetchData()
   }, [])
 
-  // 强制刷新合同数据的函数
-  const forceRefreshContracts = async () => {
-    console.log('强制刷新合同数据...')
-    try {
-      // 清空全局缓存，强制重新获取
-      if (typeof window !== 'undefined') {
-        const response = await fetch('/api/initialize-data', {
-          method: 'GET',
-        })
-        
-        if (response.ok) {
-          const result = await response.json()
-          console.log('强制刷新获取的合同数据:', result.data)
-          setContracts(result.data || [])
-          
-          // 同步到localStorage
-          localStorage.setItem('contracts', JSON.stringify(result.data || []))
-        }
-      }
-    } catch (error) {
-      console.error('强制刷新合同数据失败:', error)
+  // 监听数据初始化事件
+  useEffect(() => {
+    const handleDataInitialized = () => {
+      console.log('进度报销管理：收到数据初始化事件，重新加载数据...')
+      fetchData()
     }
-  }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('dataInitialized', handleDataInitialized)
+      return () => {
+        window.removeEventListener('dataInitialized', handleDataInitialized)
+      }
+    }
+  }, [])
+
 
   const fetchData = async () => {
     setLoading(true)
     try {
       console.log('开始获取数据...')
+      
+      // 加载项目数据
+      const projectsData = await getProjects(currentUser)
+      setProjects(projectsData)
       
       // 先检查localStorage中的数据
       const localStorageContracts = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('contracts') || '[]') : []
@@ -384,21 +397,10 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
           <p className="text-gray-600 mt-1">管理合同进度报销和审批流程</p>
         </div>
         {canCreateReimbursement && (
-          <div className="flex gap-2">
-            <Button onClick={handleCreateReimbursement} className="bg-green-600 hover:bg-green-700 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              新增进度报销
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={async () => {
-                console.log('手动刷新数据...')
-                await fetchData()
-              }}
-            >
-              刷新数据
-            </Button>
-          </div>
+          <Button onClick={handleCreateReimbursement} className="bg-green-600 hover:bg-green-700 text-white">
+            <Plus className="mr-2 h-4 w-4" />
+            新增进度报销
+          </Button>
         )}
       </div>
 
@@ -519,16 +521,8 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
                 <Label>选择合同 *</Label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">
-                    当前合同数量: {contracts.length} | 已绑定项目: {contracts.filter(c => c.boundProjectId).length}
+                    当前合同数量: {contracts.length} | 已绑定项目: {contracts.filter(isContractBound).length}
                   </span>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={forceRefreshContracts}
-                  >
-                    刷新合同
-                  </Button>
                 </div>
               </div>
               <Select value={selectedContract?.id || ''} onValueChange={handleContractSelect}>
@@ -536,12 +530,12 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
                   <SelectValue placeholder="请选择合同" />
                 </SelectTrigger>
                 <SelectContent>
-                  {contracts.filter(c => c.boundProjectId).length === 0 ? (
+                  {contracts.filter(isContractBound).length === 0 ? (
                     <div className="p-2 text-sm text-gray-500">
-                      没有找到已绑定项目的合同数据，请点击"刷新合同"按钮
+                      没有找到已绑定项目的合同数据
                     </div>
                   ) : (
-                    contracts.filter(c => c.boundProjectId).map(contract => (
+                    contracts.filter(isContractBound).map(contract => (
                       <SelectItem key={contract.id} value={contract.id}>
                         {contract.contractNumber} - {contract.contractName} (¥{contract.amount.toLocaleString()})
                       </SelectItem>

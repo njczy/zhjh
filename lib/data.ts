@@ -435,7 +435,7 @@ const generateMockProjects = (): Project[] => {
   // 获取所有中心专职角色的用户
   const centerSpecialists = mockUsers.filter(u => u.role === "中心专职")
   
-  // 为每个中心专职用户创建一个状态为"下达"的项目
+  // 为每个中心专职用户创建一个状态为"下达"的项目，并确保至少有3个下达项目以匹配合同数量
   const deliveredProjectNames = [
     "智能化监测系统项目",
     "创新研发平台建设",
@@ -445,23 +445,49 @@ const generateMockProjects = (): Project[] => {
     "运营效率优化项目"
   ]
 
-  centerSpecialists.forEach((specialist, index) => {
-    if (index < deliveredProjectNames.length) {
-      const projectName = deliveredProjectNames[index]
-      const project = createProject(projectName, specialist, "下达")
-      projects.push(project)
-    }
-  })
+  // 确保至少生成3个"下达"状态的项目以匹配合同数量
+  const minDeliveredProjects = Math.max(3, centerSpecialists.length)
+  
+  for (let i = 0; i < Math.min(minDeliveredProjects, deliveredProjectNames.length); i++) {
+    const specialist = centerSpecialists[i % centerSpecialists.length] // 如果专家数量不够，循环使用
+    const projectName = deliveredProjectNames[i]
+    const project = createProject(projectName, specialist, "下达")
+    projects.push(project)
+  }
 
-  // 添加一些其他状态的项目（编制状态）
-  const additionalProjectNames = [
+  // 添加其他状态的项目，确保覆盖完整的项目生命周期
+  const editingProjectNames = [
     "技术培训体系建设",
     "质量检测流程优化"
   ]
+  
+  const reviewingProjectNames = [
+    "设备管理信息化改造",
+    "客户服务平台升级"
+  ]
+  
+  const approvedProjectNames = [
+    "实验室安全管理系统"
+  ]
 
-  additionalProjectNames.forEach((name, index) => {
+  // 创建编制状态项目
+  editingProjectNames.forEach((name, index) => {
     const owner = centerSpecialists[index % centerSpecialists.length]
     const project = createProject(name, owner, "编制")
+    projects.push(project)
+  })
+  
+  // 创建评审状态项目（这些项目可以进行月度评审）
+  reviewingProjectNames.forEach((name, index) => {
+    const owner = centerSpecialists[index % centerSpecialists.length]
+    const project = createProject(name, owner, "评审")
+    projects.push(project)
+  })
+  
+  // 创建批复状态项目
+  approvedProjectNames.forEach((name, index) => {
+    const owner = centerSpecialists[index % centerSpecialists.length]
+    const project = createProject(name, owner, "批复")
     projects.push(project)
   })
 
@@ -558,8 +584,39 @@ export const regenerateProjects = () => {
 
 
 // 数据初始化函数 - 恢复所有模拟数据到初始状态
-export const initializeData = () => {
+export const initializeData = async () => {
   console.log('开始执行initializeData函数...')
+  
+  // 清空所有现有数据
+  console.log('清空所有现有数据...')
+  if (typeof window !== 'undefined') {
+    // 只清除应用相关的数据
+    const keysToRemove = [
+      'projects', 'contracts', 'reserve_monthly_reviews', 'approvals',
+      'progress_reimbursements', 'invoice_managements', 'audit_logs',
+      'payment_records', 'project_settlements', 'bank_transactions',
+      'match_results', 'adjustment_records', 'bidding_documents',
+      'procurement_documents', 'comprehensive_plans', 'approval_reports',
+      'reserve_needs_mock_reviews', 'todo_items', 'approval_report_confirmations',
+      'meeting_minutes'
+    ]
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+    })
+  }
+  
+  // 重置全局变量
+  projects = []
+  contracts = []
+  monthlyReviews = []
+  approvals = []
+  progressReimbursements = []
+  invoiceManagements = []
+  auditLogs = []
+  projectCodeCounter = 0
+  
+  console.log('开始生成新的模拟数据...')
   
   // 生成储备项目数据
   const newProjects = generateMockProjects()
@@ -568,8 +625,8 @@ export const initializeData = () => {
   saveToLocalStorage('projects', newProjects)
   projects = newProjects
   
-  // 生成合同数据
-  const newContracts = generateMockContracts()
+  // 生成合同数据（传递新生成的项目数据）
+  const newContracts = generateMockContracts(newProjects)
   console.log('生成的合同数据:', newContracts)
   saveToLocalStorage('contracts', newContracts)
   contracts = newContracts
@@ -650,12 +707,16 @@ export const initializeData = () => {
 }
 
 // 生成模拟合同数据
-const generateMockContracts = (): Contract[] => {
+const generateMockContracts = (projectsData?: Project[]): Contract[] => {
   // 获取现有项目，绑定已下达的项目到合同
-  const existingProjects = projects.length > 0 ? projects : generateMockProjects()
+  const existingProjects = projectsData || (projects.length > 0 ? projects : generateMockProjects())
   const deliveredProjects = existingProjects.filter(p => p.status === "下达")
   
-  return [
+  console.log('generateMockContracts: 使用的项目数据:', existingProjects.length)
+  console.log('generateMockContracts: 下达状态的项目:', deliveredProjects.length)
+  
+  // 合同模板数据
+  const contractTemplates = [
     {
       id: "contract-1",
       contractNumber: "HT-2024-001",
@@ -665,11 +726,10 @@ const generateMockContracts = (): Contract[] => {
       amount: 150000,
       supplier: "北京科技有限公司",
       department: "行政部",
-      status: "已绑定",
+      status: "已绑定" as const,
       excelFileName: "办公设备采购合同清单.xlsx",
       uploadTime: "2024-01-15 10:30:00",
-      uploader: "张三",
-      boundProjectId: deliveredProjects[0]?.id // 绑定第1个已下达项目
+      uploader: "张三"
     },
     {
       id: "contract-2",
@@ -680,11 +740,10 @@ const generateMockContracts = (): Contract[] => {
       amount: 200000,
       supplier: "上海软件科技公司",
       department: "信息部",
-      status: "已绑定",
+      status: "已绑定" as const,
       excelFileName: "软件服务合同清单.xlsx",
       uploadTime: "2024-01-10 14:20:00",
-      uploader: "李四",
-      boundProjectId: deliveredProjects[1]?.id // 绑定第2个已下达项目
+      uploader: "李四"
     },
     {
       id: "contract-3",
@@ -695,18 +754,52 @@ const generateMockContracts = (): Contract[] => {
       amount: 80000,
       supplier: "设备维护公司",
       department: "运营中心",
-      status: "已绑定",
+      status: "已绑定" as const,
       excelFileName: "设备维护服务合同清单.xlsx",
       uploadTime: "2024-02-01 09:15:00",
-      uploader: "王五",
-      boundProjectId: deliveredProjects[2]?.id // 绑定第3个已下达项目
+      uploader: "王五"
     }
   ]
+  
+  // 按需绑定：只绑定第一个合同，其他保持未绑定状态用于演示
+  const result = contractTemplates.map((template, index) => {
+    let boundProjectId: string | undefined
+    
+    // 只有第一个合同绑定到项目，其他保持未绑定状态
+    if (index === 0 && deliveredProjects.length > 0) {
+      boundProjectId = deliveredProjects[0].id
+      
+      // 更新合同的部门信息以匹配绑定项目
+      const boundProject = deliveredProjects.find(p => p.id === boundProjectId)
+      if (boundProject) {
+        template.department = boundProject.center || boundProject.department
+      }
+    }
+    
+    const contract = {
+      ...template,
+      boundProjectId,
+      status: boundProjectId ? "已绑定" as const : "未绑定" as const
+    }
+    
+    console.log(`合同 ${contract.contractNumber}: boundProjectId=${boundProjectId}, status=${contract.status}`)
+    return contract
+  })
+  
+  console.log('generateMockContracts: 最终生成的合同数据:', result.map(c => ({ id: c.id, boundProjectId: c.boundProjectId, status: c.status })))
+  return result
 }
 
 // 生成示例批复报告数据
 const generateRealisticApprovalReports = (): ApprovalReport[] => {
   const approvalReports: ApprovalReport[] = []
+  
+  // 获取现有项目和月度评审数据
+  const existingProjects = projects.length > 0 ? projects : generateMockProjects()
+  const existingReviews = monthlyReviews.length > 0 ? monthlyReviews : generateMockMonthlyReviews()
+  
+  // 获取已评审的月度评审记录，这些项目可以进入批复流程
+  const reviewedProjects = existingReviews.filter(review => review.status === "已评审")
   
   // 生成2024年项目调整批复报告
   approvalReports.push({
@@ -714,7 +807,7 @@ const generateRealisticApprovalReports = (): ApprovalReport[] => {
     meetingGroup: 'meeting-2024-001',
     templateType: 'adjustment2024',
     templateName: '2024年度项目调整批复报告',
-    selectedProjects: [],
+    selectedProjects: reviewedProjects.slice(0, 1).map(review => review.id), // 选择第一个已评审项目
     tableData: {},
     createdAt: new Date('2024-01-15').toISOString(),
     submittedAt: new Date('2024-01-15').toISOString(),
@@ -732,7 +825,7 @@ const generateRealisticApprovalReports = (): ApprovalReport[] => {
     meetingGroup: 'meeting-2025-001',
     templateType: 'preArrange2025',
     templateName: '2025年度项目预安排批复报告',
-    selectedProjects: [],
+    selectedProjects: reviewedProjects.slice(1, 2).map(review => review.id), // 选择第二个已评审项目
     tableData: {},
     createdAt: new Date('2024-02-01').toISOString(),
     submittedAt: new Date('2024-02-01').toISOString(),
@@ -851,24 +944,28 @@ const generateMockMonthlyReviews = (): MonthlyReview[] => {
   // 获取现有项目列表，确保引用真实存在的项目
   const existingProjects = projects.length > 0 ? projects : generateMockProjects()
   
-  // 只为前3个项目创建月度评审记录，确保引用的项目确实存在
-  const projectsToReview = existingProjects.slice(0, 3)
+  // 只为"评审"状态的项目创建月度评审记录，确保业务逻辑一致
+  const projectsToReview = existingProjects.filter(project => project.status === "评审")
   
   projectsToReview.forEach((project, index) => {
-    const statuses = ['已评审', '待评审', '已驳回']
+    // 为评审状态的项目分配合理的评审状态
+    const statuses = ['待评审', '已评审', '已驳回']
     const comments = [
+      '', // 待评审项目暂无评论
       '项目进展良好，按计划执行',
-      '',
       '项目风险评估不充分，需要重新论证'
     ]
     
-    // 生成当前年的随机日期加上小时分钟数字作为会议编号
+    // 生成标准格式的会议编号：日期_时间戳_审核人
     const currentYear = new Date().getFullYear()
     const randomMonth = Math.floor(Math.random() * 12) + 1
     const randomDay = Math.floor(Math.random() * 28) + 1 // 避免月末日期问题
     const randomHour = Math.floor(Math.random() * 24)
     const randomMinute = Math.floor(Math.random() * 60)
-    const meetingGroup = `${currentYear}${String(randomMonth).padStart(2, '0')}${String(randomDay).padStart(2, '0')}${String(randomHour).padStart(2, '0')}${String(randomMinute).padStart(2, '0')}`
+    const reviewDate = `${currentYear}${String(randomMonth).padStart(2, '0')}${String(randomDay).padStart(2, '0')}`
+    const timestamp = `${String(randomHour).padStart(2, '0')}${String(randomMinute).padStart(2, '0')}`
+    const reviewerName = '发展策划部门专职'
+    const meetingGroup = `${reviewDate}_${timestamp}_${reviewerName}`
     
     mockReviews.push({
       id: `review-${String(index + 1).padStart(3, '0')}`,
@@ -1083,6 +1180,25 @@ export const deleteProject = async (id: string): Promise<boolean> => {
   projects = projects.filter((p) => p.id !== id)
   if (projects.length < initialLength) {
     saveToLocalStorage('reserve_projects', projects)
+    
+    // 清理相关的合同绑定关系
+    const currentContracts = await getContracts()
+    const updatedContracts = currentContracts.map(contract => {
+      if (contract.boundProjectId === id) {
+        return { ...contract, boundProjectId: undefined }
+      }
+      return contract
+    })
+    
+    // 如果有合同绑定关系被清理，则更新合同数据
+    const hasChanges = updatedContracts.some((contract, index) => 
+      contract.boundProjectId !== currentContracts[index].boundProjectId
+    )
+    
+    if (hasChanges) {
+      contracts = updatedContracts
+      saveToLocalStorage('contracts', contracts)
+    }
   }
   return Promise.resolve(projects.length < initialLength)
 }
@@ -2144,10 +2260,25 @@ export const removeProjectFromComprehensivePlan = async (planId: string, project
 export const getContracts = async (): Promise<Contract[]> => {
   console.log('getContracts函数被调用，当前全局contracts长度:', contracts.length)
   
-  if (contracts.length === 0) {
-    console.log('全局contracts为空，从localStorage加载...')
-    contracts = initializeContractsFromStorage()
-    console.log('从localStorage加载的合同数据:', contracts)
+  // 首先检查localStorage
+  const loadedContracts = initializeContractsFromStorage()
+  
+  if (contracts.length === 0 || loadedContracts.length === 0) {
+    console.log('需要重新生成合同数据...')
+    
+    if (loadedContracts.length === 0) {
+      console.log('localStorage没有合同数据，生成初始数据...')
+      // 清空全局变量确保重新生成
+      contracts = []
+      // 获取当前的项目数据来生成合同
+      const currentProjects = await getProjects()
+      const generatedContracts = generateMockContracts(currentProjects)
+      saveToLocalStorage('contracts', generatedContracts)
+      contracts = generatedContracts
+    } else {
+      contracts = loadedContracts
+    }
+    console.log('最终加载的合同数据:', contracts)
   }
   
   console.log('getContracts返回合同数据长度:', contracts.length)
@@ -2206,6 +2337,11 @@ export const getContractsByProjectId = async (projectId: string): Promise<Contra
 
 export const bindProjectToContract = async (contractId: string, projectId: string): Promise<boolean> => {
   const updatedContract = await updateContract(contractId, { boundProjectId: projectId })
+  return updatedContract !== null
+}
+
+export const unbindProjectFromContract = async (contractId: string): Promise<boolean> => {
+  const updatedContract = await updateContract(contractId, { boundProjectId: undefined })
   return updatedContract !== null
 }
 

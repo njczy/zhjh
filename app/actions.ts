@@ -512,7 +512,7 @@ export async function handleReviewRejectionAction(
 // 数据初始化的Server Action
 export async function initializeDataAction(): Promise<{ success: boolean; message: string }> {
   try {
-    initializeData()
+    await initializeData()
     
     // 获取初始化后的数据进行验证
     const projects = await getProjects()

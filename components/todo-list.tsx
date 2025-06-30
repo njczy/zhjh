@@ -12,7 +12,11 @@ import { useUser } from "@/contexts/UserContext"
 import { getTodoItemsAction, processTodoItemAction, getApprovalReportByIdAction, getApprovalByIdAction, getProjectByIdAction } from "@/app/actions"
 import type { TodoItem, ApprovalReport, Approval, Project } from "@/lib/data"
 
-export default function TodoList() {
+interface TodoListProps {
+  onTodoProcessed?: () => void
+}
+
+export default function TodoList({ onTodoProcessed }: TodoListProps) {
   const router = useRouter()
   const { currentUser } = useUser()
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
@@ -96,6 +100,10 @@ export default function TodoList() {
         setRelatedProject(null)
         setProcessingComments("")
         await fetchTodoItems() // 刷新待办列表
+        // 通知父组件更新待办数量
+        if (onTodoProcessed) {
+          onTodoProcessed()
+        }
       } else {
         alert(result.message)
       }

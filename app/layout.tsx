@@ -8,7 +8,7 @@ import { StagewiseToolbar } from "@stagewise/toolbar-next" // Import Stagewise t
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "电视院项目管理系统",
+  title: "电试院项目管理系统",
   description: "储备项目管理模块",
     generator: 'v0.dev'
 }

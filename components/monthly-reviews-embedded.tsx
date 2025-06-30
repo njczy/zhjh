@@ -423,6 +423,15 @@ export default function MonthlyReviewsEmbedded() {
       const location = parts.slice(2).join('_')
       return `${date} ${time} ${location}`
     }
+    // 如果是纯数字格式（YYYYMMDDHHMM），格式化显示
+    if (/^\d{12}$/.test(groupKey)) {
+      const year = groupKey.slice(0, 4)
+      const month = groupKey.slice(4, 6)
+      const day = groupKey.slice(6, 8)
+      const hour = groupKey.slice(8, 10)
+      const minute = groupKey.slice(10, 12)
+      return `${year}-${month}-${day} ${hour}:${minute}`
+    }
     return groupKey
   }
 
@@ -545,7 +554,7 @@ export default function MonthlyReviewsEmbedded() {
             id="include-tax"
             checked={includeTax}
             onCheckedChange={(checked) => setIncludeTax(checked === true)}
-            className="data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
           />
           <Label htmlFor="include-tax" className="text-sm text-gray-700 whitespace-nowrap">
             是否含税
@@ -638,7 +647,15 @@ export default function MonthlyReviewsEmbedded() {
                           </Button>
                         </TableCell>
                         <TableCell className="text-left font-medium text-blue-700">
-                          {groupKey.split('_')[0] + '_' + groupKey.split('_')[1]}
+                          {(() => {
+                            if (groupKey === "未分组") return "未分组"
+                            const parts = groupKey.split('_')
+                            if (parts.length >= 2) {
+                              return parts[0] + '_' + parts[1]
+                            }
+                            // 如果是纯数字格式（老格式），直接显示
+                            return groupKey
+                          })()}
                         </TableCell>
                         <TableCell className="text-center font-medium">{reviewsInGroup.length}</TableCell>
                         <TableCell className="text-center">{formatAmount(calculateGroupTotalExpense(reviewsInGroup, includeTax))}</TableCell>
@@ -994,8 +1011,7 @@ export default function MonthlyReviewsEmbedded() {
           {/* 会议时间范围 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm font-medium text-green-700 mb-2 block flex items-center">
-                <span className="w-2 h-2 bg-teal-500 rounded-full mr-2"></span>
+              <Label className="text-sm font-medium text-green-700 mb-2 block">
                 会议开始时间
               </Label>
               <div className="space-y-3">
@@ -1035,8 +1051,7 @@ export default function MonthlyReviewsEmbedded() {
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium text-red-700 mb-2 block flex items-center">
-                <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+              <Label className="text-sm font-medium text-red-700 mb-2 block">
                 会议结束时间
               </Label>
               <div className="space-y-3">
@@ -1125,7 +1140,6 @@ export default function MonthlyReviewsEmbedded() {
                   <span>行数：{meetingMinutesContent.split('\n').length}</span>
                   {isEditing && (
                     <span className="text-green-600 flex items-center">
-                      <span className="w-2 h-2 bg-teal-500 rounded-full mr-1 animate-pulse"></span>
                       可编辑
                     </span>
                   )}
@@ -1418,7 +1432,7 @@ export default function MonthlyReviewsEmbedded() {
                                 report.status === "已审批" ? "bg-green-100 text-green-700" :
                                 report.status === "待审批" ? "bg-yellow-100 text-yellow-700" :
                                 report.status === "确认中" ? "bg-blue-100 text-blue-700" :
-                                report.status === "待确认" ? "bg-orange-100 text-orange-700" :
+                                report.status === "待确认" ? "bg-yellow-100 text-yellow-700" :
                                 report.status === "已驳回" ? "bg-red-100 text-red-700" :
                                 "bg-gray-100 text-gray-700"
                               }`}>
@@ -1436,26 +1450,23 @@ export default function MonthlyReviewsEmbedded() {
                                    const project = allCenterProjects.find(p => p.id === review.projectId)
                                    
                                    return (
-                                     <div key={projectId} className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                                     <div key={projectId} className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
                                        <div className="flex items-start justify-between">
                                          <div className="flex-1 min-w-0">
                                            <h5 className="font-semibold text-gray-900 text-sm truncate mb-1">{review.projectName}</h5>
                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                                              <div className="flex items-center text-gray-600">
-                                               <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1.5 flex-shrink-0"></span>
                                                <span className="font-medium mr-1">编号:</span>
                                                <span className="truncate">{review.projectId}</span>
                                              </div>
                                              {project?.center && (
                                                <div className="flex items-center text-gray-600">
-                                                 <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-1.5 flex-shrink-0"></span>
                                                  <span className="font-medium mr-1">归属:</span>
                                                  <span className="truncate">{project.center}</span>
                                                </div>
                                              )}
                                              {project?.owner && (
                                                <div className="flex items-center text-gray-600">
-                                                 <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-1.5 flex-shrink-0"></span>
                                                  <span className="font-medium mr-1">负责人:</span>
                                                  <span className="truncate">{project.owner}</span>
                                                </div>
@@ -1576,11 +1587,11 @@ export default function MonthlyReviewsEmbedded() {
                   <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
+                        <div className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
                         <span className="text-sm font-medium">已选择 {selectedApprovalProjects.length} 个项目</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
+                        <div className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-medium">✓</div>
                         <span className="text-sm font-medium">
                           {approvalTemplateType === "adjustment2024" ? `${new Date().getFullYear()}年已下达项目调整评审意见汇总表` :
                            approvalTemplateType === "newProject2024" ? `${new Date().getFullYear()}年新增项目评审意见汇总表` :
@@ -1794,20 +1805,16 @@ export default function MonthlyReviewsEmbedded() {
                           if (!review) return null
                           
                           return (
-                            <div key={projectId} className="relative bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 border border-blue-200/50 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-                              {/* 装饰性背景 */}
-                              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/20 to-indigo-100/10 rounded-full -mr-16 -mt-16"></div>
+                            <div key={projectId} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                              {/* 项目编号和标题 */}
                               
                               {/* 项目基本信息 */}
-                              <div className="relative mb-6">
-                                <div className="flex items-center mb-6">
-                                  <div className="relative">
-                                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold mr-4 shadow-md">
-                                      项目 {index + 1}
-                                    </div>
-                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 rounded-full border-2 border-white"></div>
+                              <div className="mb-6">
+                                <div className="flex items-center mb-4">
+                                  <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium mr-3">
+                                    项目 {index + 1}
                                   </div>
-                                  <h3 className="text-xl font-bold text-gray-800 flex-1">{review.projectName}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900 flex-1">{review.projectName}</h3>
                                   <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">
                                     ✓ 通过
                                   </div>
@@ -1815,47 +1822,43 @@ export default function MonthlyReviewsEmbedded() {
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                   <div className="space-y-2">
-                                    <label className="flex items-center text-sm font-semibold text-gray-700">
-                                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                    <label className="text-sm font-medium text-gray-700">
                                       项目类型
                                     </label>
                                     <Input 
                                       placeholder="请输入项目类型" 
-                                      className="w-full border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                                      className="w-full"
                                       value={getTableDataValue(projectId, "projectType")}
                                       onChange={(e) => updateTableData(projectId, "projectType", e.target.value)}
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <label className="flex items-center text-sm font-semibold text-gray-700">
-                                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                                    <label className="text-sm font-medium text-gray-700">
                                       责任部门
                                     </label>
                                     <Input 
                                       placeholder="请输入责任部门" 
-                                      className="w-full border-gray-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all duration-200"
+                                      className="w-full"
                                       value={getTableDataValue(projectId, "responsibleDept")}
                                       onChange={(e) => updateTableData(projectId, "responsibleDept", e.target.value)}
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <label className="flex items-center text-sm font-semibold text-gray-700">
-                                      <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                                    <label className="text-sm font-medium text-gray-700">
                                       项目负责人
                                     </label>
                                     <Input 
                                       placeholder="请输入负责人" 
-                                      className="w-full border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all duration-200"
+                                      className="w-full"
                                       value={getTableDataValue(projectId, "projectManager")}
                                       onChange={(e) => updateTableData(projectId, "projectManager", e.target.value)}
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <label className="flex items-center text-sm font-semibold text-gray-700">
-                                      <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
+                                    <label className="text-sm font-medium text-gray-700">
                                       评审结论
                                     </label>
-                                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-lg border border-green-200 text-sm font-semibold text-center shadow-sm">
+                                    <div className="p-3 bg-green-50 text-green-700 rounded-lg border border-green-200 text-sm font-medium text-center">
                                       ✅ 通过
                                     </div>
                                   </div>
@@ -1864,83 +1867,74 @@ export default function MonthlyReviewsEmbedded() {
 
                               {/* 财务信息 */}
                               {approvalTemplateType === "adjustment2024" || approvalTemplateType === "adjustmentApproval2024" ? (
-                                <div className="relative mb-6 bg-gradient-to-r from-amber-50/50 to-orange-50/30 rounded-xl p-5 border border-amber-200/50">
-                                  <div className="absolute top-3 left-3 w-1 h-8 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></div>
-                                  <h4 className="text-lg font-bold text-gray-800 mb-4 pl-6 flex items-center">
-                                    <span className="text-amber-600 mr-2">💰</span>
+                                <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
+                                    <span className="text-gray-600 mr-2">💰</span>
                                     财务调整信息
                                   </h4>
                                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         计划总收入 (万元)
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all duration-200" placeholder="请输入金额"
+                                      <Input className="w-full" placeholder="请输入金额"
                                         value={getTableDataValue(projectId, "plannedTotalIncome")}
                                         onChange={(e) => updateTableData(projectId, "plannedTotalIncome", e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         调整后总收入 (万元)
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all duration-200" placeholder="请输入金额"
+                                      <Input className="w-full" placeholder="请输入金额"
                                         value={getTableDataValue(projectId, "adjustedTotalIncome")}
                                         onChange={(e) => updateTableData(projectId, "adjustedTotalIncome", e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         当年计划收入 (万元)
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all duration-200" placeholder="请输入金额"
+                                      <Input className="w-full" placeholder="请输入金额"
                                         value={getTableDataValue(projectId, "currentYearPlannedIncome")}
                                         onChange={(e) => updateTableData(projectId, "currentYearPlannedIncome", e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         调整后当年收入 (万元)
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all duration-200" placeholder="请输入金额"
+                                      <Input className="w-full" placeholder="请输入金额"
                                         value={getTableDataValue(projectId, "adjustedCurrentYearIncome")}
                                         onChange={(e) => updateTableData(projectId, "adjustedCurrentYearIncome", e.target.value)} />
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="relative mb-6 bg-gradient-to-r from-emerald-50/50 to-teal-50/30 rounded-xl p-5 border border-emerald-200/50">
-                                  <div className="absolute top-3 left-3 w-1 h-8 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full"></div>
-                                  <h4 className="text-lg font-bold text-gray-800 mb-4 pl-6 flex items-center">
-                                    <span className="text-emerald-600 mr-2">📊</span>
+                                <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
+                                    <span className="text-gray-600 mr-2">📊</span>
                                     财务计划
                                   </h4>
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         收入计划 (万元)
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all duration-200" placeholder="请输入金额"
+                                      <Input className="w-full" placeholder="请输入金额"
                                         value={getTableDataValue(projectId, "incomePlan")}
                                         onChange={(e) => updateTableData(projectId, "incomePlan", e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         支出计划 (万元)
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all duration-200" placeholder="请输入金额"
+                                      <Input className="w-full" placeholder="请输入金额"
                                         value={getTableDataValue(projectId, "expensePlan")}
                                         onChange={(e) => updateTableData(projectId, "expensePlan", e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
-                                      <label className="flex items-center text-sm font-semibold text-gray-700">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                      <label className="text-sm font-medium text-gray-700">
                                         实施年份
                                       </label>
-                                      <Input className="w-full border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all duration-200" placeholder="请输入年份"
+                                      <Input className="w-full" placeholder="请输入年份"
                                         value={getTableDataValue(projectId, "implementationYear")}
                                         onChange={(e) => updateTableData(projectId, "implementationYear", e.target.value)} />
                                     </div>
@@ -1949,16 +1943,15 @@ export default function MonthlyReviewsEmbedded() {
                               )}
 
                               {/* 详细信息 */}
-                              <div className="relative mb-6 bg-gradient-to-r from-slate-50/50 to-gray-50/30 rounded-xl p-5 border border-slate-200/50">
-                                <div className="absolute top-3 left-3 w-1 h-8 bg-gradient-to-b from-slate-400 to-gray-500 rounded-full"></div>
-                                <h4 className="text-lg font-bold text-gray-800 mb-4 pl-6 flex items-center">
-                                  <span className="text-slate-600 mr-2">📝</span>
+                              <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
+                                  <span className="text-gray-600 mr-2">📝</span>
                                   {approvalTemplateType === "adjustment2024" || approvalTemplateType === "adjustmentApproval2024" ? "调整详情" : "项目详情"}
                                 </h4>
-                                <div className="pl-6">
+                                <div>
                                   <Textarea 
                                     placeholder="请详细填写项目的具体信息、实施方案、调整原因或其他重要说明..."
-                                    className="min-h-[120px] border-gray-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all duration-200 resize-none"
+                                    className="min-h-[120px] resize-none"
                                     value={getTableDataValue(projectId, "projectDetails")}
                                     onChange={(e) => updateTableData(projectId, "projectDetails", e.target.value)}
                                   />

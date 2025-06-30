@@ -54,6 +54,7 @@ import {
   PermissionMatrix,
 } from "@/lib/data"
 import { useUser } from "@/contexts/UserContext" // Import useUser
+import { getTodoItemsAction } from "@/app/actions"
 import MonthlyReviewsEmbedded from "./monthly-reviews-embedded"
 import AddProjectReserve from "./add-project-reserve"
 import ProjectDetailView from "./project-detail-view"
@@ -349,6 +350,9 @@ function ReserveProjectManagementWithParams() {
   const [selectedProjectForApproval, setSelectedProjectForApproval] = useState<Project | null>(null)
   const [selectedApprover, setSelectedApprover] = useState<string>("")
   const [currentView, setCurrentView] = useState<"projects" | "add-project" | "view-project" | "edit-project" | "todo">("projects")
+  
+  // 待办数量状态
+  const [todoCount, setTodoCount] = useState(0)
   
   // Tab navigation states
   const [activeTab, setActiveTab] = useState("储备及综合计划")
@@ -789,7 +793,18 @@ function ReserveProjectManagementWithParams() {
     // 允许所有用户执行数据初始化，用于测试和开发环境
     const result = await initializeDataAction()
     if (result.success) {
+      // 等待一小段时间确保数据完全保存
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       await fetchProjects() // Refresh the projects list
+      
+      // 通知其他组件数据已初始化，需要刷新
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('dataInitialized', {
+          detail: { timestamp: Date.now() }
+        }))
+      }
+      
       alert(result.message)
     } else {
       alert(result.message)
@@ -804,7 +819,7 @@ function ReserveProjectManagementWithParams() {
   const canViewApprovals = 
     currentUser.role === "中心领导" || currentUser.role === "部门领导" || currentUser.role === "分管院领导"
 
-  // Tab configuration - moved after permission definitions
+  // Tab configuration - moved before useEffect
   const tabConfig = {
     "储备及综合计划": {
       icon: ListFilter,
@@ -849,9 +864,68 @@ function ReserveProjectManagementWithParams() {
     }
   }
 
+  // 监听用户变化，重置页面状态到用户有权限访问的默认页面
+  useEffect(() => {
+    // 重置页面视图状态
+    setCurrentView("projects")
+    
+    // 检查当前标签页是否对新用户可见，如果不可见则切换到"储备及综合计划"
+    const availableTabs = Object.keys(tabConfig).filter(tabKey => {
+      const tabData = tabConfig[tabKey as keyof typeof tabConfig]
+      // 合同管理没有子标签但是需要显示，其他标签页需要有子标签才显示
+      return tabKey === "合同管理" || tabData.subTabs.length > 0
+    })
+    
+    // 如果当前标签页不在可用标签列表中，切换到第一个可用标签
+    if (!availableTabs.includes(activeTab)) {
+      const defaultTab = "储备及综合计划"
+      setActiveTab(defaultTab)
+      setActiveSubTab("评审") // 储备管理是所有用户都能访问的
+    } else {
+      // 检查当前子标签页是否对新用户可见
+      const currentTabData = tabConfig[activeTab as keyof typeof tabConfig]
+      const availableSubTabs = currentTabData.subTabs.map(subTab => subTab.key)
+      
+      if (!availableSubTabs.includes(activeSubTab)) {
+        // 如果当前子标签页不可见，切换到第一个可见的子标签页
+        if (availableSubTabs.length > 0) {
+          setActiveSubTab(availableSubTabs[0])
+        }
+      }
+    }
+  }, [currentUser.id, canViewMonthlyReviews, canViewComprehensivePlan]) // 依赖用户ID和权限变化
+
+  // 获取待办数量
+  const fetchTodoCount = async () => {
+    try {
+      const items = await getTodoItemsAction(currentUser.id)
+      // 过滤掉月度审核参与人确认的待办事项
+      const filteredItems = items.filter(item => 
+        item.type !== "monthly_review_participant_confirm" && 
+        item.status === "待处理"
+      )
+      setTodoCount(filteredItems.length)
+    } catch (error) {
+      console.error('获取待办数量失败:', error)
+      setTodoCount(0)
+    }
+  }
+
+  // 初始化和定期更新待办数量
+  useEffect(() => {
+    if (currentUser.id) {
+      fetchTodoCount()
+      // 每30秒更新一次待办数量
+      const interval = setInterval(fetchTodoCount, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [currentUser.id])
+
   // Handle tab changes
   const handleTabChange = (tabKey: string) => {
     setActiveTab(tabKey)
+    // 重置视图为项目列表，这样切换标签页时会显示对应的内容
+    setCurrentView("projects")
     const tabData = tabConfig[tabKey as keyof typeof tabConfig]
     if (tabData.subTabs.length > 0) {
       setActiveSubTab(tabData.subTabs[0].key)
@@ -915,15 +989,33 @@ function ReserveProjectManagementWithParams() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <>
+      {/* 自定义动画样式 */}
+      <style jsx>{`
+        @keyframes flash {
+          0%, 50% { opacity: 1; }
+          25%, 75% { opacity: 0.5; }
+        }
+        .flash-animation {
+          animation: flash 2s infinite;
+        }
+      `}</style>
+      
+      <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b shadow-sm">
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between h-16 px-6">
-          <div className="text-lg font-semibold text-gray-800">
+        <div className="flex items-center justify-between min-h-16 h-auto py-3 px-6">
+          <div className="text-2xl xs:text-3xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-4xl font-semibold text-gray-800 flex-shrink-0 truncate">
             运营管控平台
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+            <Link href="/operation-guide">
+              <Button variant="outline" size="sm" className="text-purple-600 border-purple-600 hover:bg-purple-50 hover:text-purple-700">
+                <BookOpen className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">操作说明</span>
+              </Button>
+            </Link>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -931,8 +1023,8 @@ function ReserveProjectManagementWithParams() {
                   size="sm"
                   className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700"
                 >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  数据初始化
+                  <RotateCcw className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">数据初始化</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -986,7 +1078,13 @@ function ReserveProjectManagementWithParams() {
           {/* Main Tabs */}
           <div className="flex items-center justify-between px-6 py-2 border-b border-gray-200">
             <nav className="flex space-x-1">
-              {Object.keys(tabConfig).map((tabKey) => {
+              {Object.keys(tabConfig)
+                .filter(tabKey => {
+                  const tabData = tabConfig[tabKey as keyof typeof tabConfig]
+                  // 合同管理没有子标签但是需要显示，其他标签页需要有子标签才显示
+                  return tabKey === "合同管理" || tabData.subTabs.length > 0
+                })
+                .map((tabKey) => {
                 const tabData = tabConfig[tabKey as keyof typeof tabConfig]
                 const IconComponent = tabData.icon
                 const isActive = activeTab === tabKey
@@ -1012,8 +1110,15 @@ function ReserveProjectManagementWithParams() {
             
             {/* 待办 - 移至最右侧，集中处理所有审批和待办功能 */}
             <button
-              onClick={() => setCurrentView("todo")}
-              className={`flex items-center px-3 py-1.5 text-sm rounded transition-colors duration-200 ease-in-out ${
+              onClick={() => {
+                setCurrentView("todo")
+                // 切换到待办页面时，清除主标签的选中状态
+                setActiveTab("")
+                setActiveSubTab("")
+                // 切换到待办页面时刷新待办数量
+                fetchTodoCount()
+              }}
+              className={`relative flex items-center px-3 py-1.5 text-sm rounded transition-colors duration-200 ease-in-out ${
                 currentView === "todo" 
                   ? "bg-teal-500 text-white" 
                   : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
@@ -1022,7 +1127,20 @@ function ReserveProjectManagementWithParams() {
               <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              待办
+              <span>待办</span>
+              
+              {/* 待办数量显示 */}
+              {todoCount > 0 && (
+                <span 
+                  className={`ml-1.5 min-w-[18px] h-[18px] px-1 text-xs font-semibold rounded-full flex items-center justify-center transition-all duration-300 ${
+                    currentView === "todo"
+                      ? "bg-white text-teal-600 animate-pulse"
+                      : "bg-red-500 text-white animate-bounce flash-animation"
+                  }`}
+                >
+                  {todoCount > 99 ? '99+' : todoCount}
+                </span>
+              )}
             </button>
           </div>
           
@@ -1065,14 +1183,9 @@ function ReserveProjectManagementWithParams() {
           <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
-                                 <h2 className="text-2xl font-bold text-gray-800">储备评审</h2>
+                                 <h2 className="text-2xl font-bold text-gray-800">储备项目列表</h2>
               </div>
               <div className="flex space-x-3">
-                <Link href="/operation-guide">
-                  <Button variant="outline" className="text-purple-600 border-purple-600 hover:bg-purple-50 hover:text-purple-700">
-                    <BookOpen className="mr-2 h-4 w-4" /> 操作说明
-                  </Button>
-                </Link>
                 {(currentUser.role === "中心专职" || currentUser.role === "部门专职") && (
                   <Button onClick={handleAddProject} className="bg-blue-600 hover:bg-blue-700 text-white">
                     <Plus className="mr-2 h-4 w-4" /> 新增项目
@@ -1889,7 +2002,7 @@ function ReserveProjectManagementWithParams() {
             </div>
           </div>
         ) : currentView === "todo" ? (
-          <TodoList />
+          <TodoList onTodoProcessed={fetchTodoCount} />
         ) : activeTab === "储备及综合计划" && activeSubTab === "批复" ? (
           <MonthlyReviewsEmbedded />
         ) : activeTab === "储备及综合计划" && activeSubTab === "下达" ? (
@@ -2124,6 +2237,7 @@ function ReserveProjectManagementWithParams() {
       </Dialog>
 
     </div>
+    </>
   )
 }
 

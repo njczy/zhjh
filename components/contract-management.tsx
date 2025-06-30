@@ -28,7 +28,7 @@ import { format } from "date-fns"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getProjects, type Project, getContracts, addContract, updateContract, deleteContract, bindProjectToContract, type Contract } from "@/lib/data"
+import { getProjects, type Project, getContracts, addContract, updateContract, deleteContract, bindProjectToContract, unbindProjectFromContract, type Contract } from "@/lib/data"
 
 // 合同接口定义已移到 lib/data.ts 中
 // interface Contract {
@@ -73,12 +73,11 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
   const [contractToBindProject, setContractToBindProject] = useState<Contract | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string>("")
 
-  // 加载合同数据
-  useEffect(() => {
-    const loadContracts = async () => {
-      try {
-        setLoading(true)
-        let contractsData = await getContracts()
+  // 合同数据加载函数
+  const loadContracts = async () => {
+    try {
+      setLoading(true)
+      let contractsData = await getContracts()
         
         // 如果客户端localStorage中没有合同数据，尝试从服务器初始化
         if (!contractsData || contractsData.length === 0) {
@@ -116,62 +115,89 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
           }
         }
         
-        setContracts(contractsData || [])
-      } catch (error) {
-        console.error('加载合同数据失败:', error)
-        alert('加载合同数据失败，请刷新页面重试')
-      } finally {
-        setLoading(false)
-      }
+      setContracts(contractsData || [])
+    } catch (error) {
+      console.error('加载合同数据失败:', error)
+      alert('加载合同数据失败，请刷新页面重试')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // 加载合同数据
+  useEffect(() => {
     loadContracts()
   }, [])
 
-  // 加载项目数据
+  // 监听数据初始化事件
   useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        let allProjects = await getProjects()
-        
-        // 如果没有项目数据或者没有"下达"状态的项目，尝试初始化数据
-        const deliveredProjects = allProjects.filter(project => project.status === "下达")
-        if (deliveredProjects.length === 0) {
-          console.log('没有找到状态为"下达"的项目，尝试初始化数据...')
-          try {
-            const response = await fetch('/api/initialize-data', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            })
-            
-            if (response.ok) {
-              const result = await response.json()
-              console.log('项目数据初始化成功:', result)
-              
-              // 如果API返回了项目数据，使用返回的数据
-              if (result.fullData && result.fullData.projects && result.fullData.projects.length > 0) {
-                allProjects = result.fullData.projects
-                console.log('使用API返回的项目数据:', allProjects)
-              } else {
-                // 重新获取项目数据
-                allProjects = await getProjects()
-                console.log('重新获取的项目数据:', allProjects)
-              }
-            }
-          } catch (initError) {
-            console.error('初始化项目数据失败:', initError)
-          }
-        }
-        
-        // 只获取状态为"下达"的项目
-        const finalDeliveredProjects = allProjects.filter(project => project.status === "下达")
-        setProjects(finalDeliveredProjects)
-        console.log('最终加载的下达状态项目:', finalDeliveredProjects)
-      } catch (error) {
-        console.error('加载项目数据失败:', error)
+    const handleDataInitialized = () => {
+      console.log('收到数据初始化事件，清除本地缓存并重新加载数据...')
+      // 先清除localStorage中的相关数据
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('contracts')
+        localStorage.removeItem('projects')
+      }
+      // 重新加载项目和合同数据
+      loadProjects()
+      loadContracts()
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('dataInitialized', handleDataInitialized)
+      return () => {
+        window.removeEventListener('dataInitialized', handleDataInitialized)
       }
     }
+  }, [])
+
+  // 项目数据加载函数
+  const loadProjects = async () => {
+    try {
+      let allProjects = await getProjects()
+      
+      // 如果没有项目数据或者没有"下达"状态的项目，尝试初始化数据
+      const deliveredProjects = allProjects.filter(project => project.status === "下达")
+      if (deliveredProjects.length === 0) {
+        console.log('没有找到状态为"下达"的项目，尝试初始化数据...')
+        try {
+          const response = await fetch('/api/initialize-data', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            console.log('项目数据初始化成功:', result)
+            
+            // 如果API返回了项目数据，使用返回的数据
+            if (result.fullData && result.fullData.projects && result.fullData.projects.length > 0) {
+              allProjects = result.fullData.projects
+              console.log('使用API返回的项目数据:', allProjects)
+            } else {
+              // 重新获取项目数据
+              allProjects = await getProjects()
+              console.log('重新获取的项目数据:', allProjects)
+            }
+          }
+        } catch (initError) {
+          console.error('初始化项目数据失败:', initError)
+        }
+      }
+      
+      // 只获取状态为"下达"的项目
+      const finalDeliveredProjects = allProjects.filter(project => project.status === "下达")
+      setProjects(finalDeliveredProjects)
+      console.log('最终加载的下达状态项目:', finalDeliveredProjects)
+    } catch (error) {
+      console.error('加载项目数据失败:', error)
+    }
+  }
+
+  // 加载项目数据
+  useEffect(() => {
     loadProjects()
   }, [])
 
@@ -276,7 +302,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
 
   // 新增：确认绑定项目
   const handleConfirmBindProject = async () => {
-    if (!contractToBindProject) return
+    if (!contractToBindProject || !selectedProjectId) return
 
     try {
       const success = await bindProjectToContract(contractToBindProject.id, selectedProjectId)
@@ -300,6 +326,29 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
       }
     } catch (error) {
       alert('绑定项目失败，请重试')
+    }
+  }
+
+  // 新增：处理解绑项目
+  const handleUnbindProject = async (contract: Contract) => {
+    try {
+      const success = await unbindProjectFromContract(contract.id)
+      if (success) {
+        // 更新本地状态
+        setContracts(prev => 
+          prev.map(c => 
+            c.id === contract.id 
+              ? { ...c, boundProjectId: undefined }
+              : c
+          )
+        )
+        
+        alert(`成功解绑合同 "${contract.contractName}" 的项目绑定！`)
+      } else {
+        alert('解绑项目失败，请重试')
+      }
+    } catch (error) {
+      alert('解绑项目失败，请重试')
     }
   }
 
@@ -329,7 +378,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
     
     const boundProject = projects.find(project => project.id === boundProjectId)
     if (!boundProject) {
-      return "项目已删除"
+      return "无"
     }
     
     return boundProject.name
@@ -509,15 +558,47 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                           <Eye className="h-3 w-3 mr-1" />
                           详情
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleBindProject(contract)}
-                          className="h-7 px-2 text-xs text-orange-600 border-orange-600 hover:bg-orange-50"
-                        >
-                          <LinkIcon className="h-3 w-3 mr-1" />
-                          绑定
-                        </Button>
+                        {getBoundProjectStatus(contract.boundProjectId) === "已绑定" ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-7 px-2 text-xs text-red-600 border-red-600 hover:bg-red-50"
+                              >
+                                <LinkIcon className="h-3 w-3 mr-1" />
+                                解绑
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>确认解绑项目</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  确定要解绑合同 "{contract.contractName}" 与项目 "{getBoundProjectNames(contract.boundProjectId)}" 的绑定关系吗？此操作不可撤销。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>取消</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleUnbindProject(contract)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  确认解绑
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleBindProject(contract)}
+                            className="h-7 px-2 text-xs text-orange-600 border-orange-600 hover:bg-orange-50"
+                          >
+                            <LinkIcon className="h-3 w-3 mr-1" />
+                            绑定
+                          </Button>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 
@@ -669,9 +750,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
                           <div className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
                             {project.name} ({project.center || project.department})
                           </div>
-                        ) : (
-                          <p className="mt-1 text-sm text-gray-500">绑定的项目已删除</p>
-                        )
+                        ) : null
                       })()}
                     </div>
                   ) : (

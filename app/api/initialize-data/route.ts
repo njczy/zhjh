@@ -62,7 +62,19 @@ export async function POST(request: NextRequest) {
       // 返回完整的数据供客户端同步
       fullData: {
         projects,
-        contracts
+        contracts,
+        progressReimbursements,
+        invoiceManagements,
+        projectSettlements,
+        monthlyReviews,
+        approvalReports,
+        todoItems,
+        approvals,
+        biddingDocuments,
+        procurementDocuments,
+        bankTransactions,
+        matchResults,
+        adjustmentRecords
       }
     }
 
