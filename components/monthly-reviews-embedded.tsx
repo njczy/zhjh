@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Eye, Edit, CalendarCheck, FileText, ClipboardList, Send, Upload, Download, CalendarIcon, ChevronDown, ChevronRight } from "lucide-react"
+import { useIsMobile } from "@/components/ui/use-mobile"
 import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -501,16 +502,40 @@ export default function MonthlyReviewsEmbedded() {
     setIsReviewDetailModalOpen(false)
   }
 
+  const isMobile = useIsMobile()
+
   return (
     <>
-    <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">月度评审</h2>
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      {/* 页面标题和操作按钮 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <div>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">月度评审</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">管理项目月度评审会议和批复报告</p>
+          </div>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
+          {canInitiateReview && (
+            <Button
+              onClick={() => setIsInitiateReviewModalOpen(true)}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm"
+            >
+              <CalendarCheck className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">月度评审发起</span>
+              <span className="sm:hidden">发起</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 筛选区域 */}
-      <div className="mb-6 flex gap-4 items-end">
-        <div className="w-[150px]">
+      <div className={cn(
+        "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0",
+        isMobile ? "flex-col" : "flex-row"
+      )}>
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
             会议编号
           </Label>
@@ -523,7 +548,7 @@ export default function MonthlyReviewsEmbedded() {
           />
         </div>
         
-        <div className="w-[150px]">
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
             评审时间
           </Label>
@@ -534,13 +559,15 @@ export default function MonthlyReviewsEmbedded() {
           />
         </div>
         
-        <div className="w-[20px] flex items-center justify-center h-10">
-          <span className="text-gray-500 font-medium">-</span>
-        </div>
+        {!isMobile && (
+          <div className="w-[20px] flex items-center justify-center h-10">
+            <span className="text-gray-500 font-medium">-</span>
+          </div>
+        )}
         
-        <div className="w-[150px]">
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
-            结束日期
+            {isMobile ? "结束日期" : "结束日期"}
           </Label>
           <EnhancedDatePicker
             date={filterEndDate}
@@ -549,7 +576,7 @@ export default function MonthlyReviewsEmbedded() {
           />
         </div>
         
-        <div className="flex items-center space-x-2 h-10">
+        <div className={cn("flex items-center space-x-2", isMobile ? "w-full" : "h-10")}>
           <Checkbox
             id="include-tax"
             checked={includeTax}
@@ -561,10 +588,11 @@ export default function MonthlyReviewsEmbedded() {
           </Label>
         </div>
         
-        <div className="flex gap-3 ml-auto items-center h-10">
+        <div className={cn("flex gap-2 sm:gap-3", isMobile ? "w-full" : "ml-auto items-center h-10")}>
           <Button
             variant="outline"
-            className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 px-6"
+            size="sm"
+            className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 px-3 py-2 text-sm"
             onClick={() => {
               setMeetingCode("")
               setFilterStartDate(undefined)
@@ -574,22 +602,183 @@ export default function MonthlyReviewsEmbedded() {
           >
             重置
           </Button>
-          
-          {canInitiateReview && (
-            <Button
-              onClick={() => setIsInitiateReviewModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6"
-            >
-              月度评审发起
-            </Button>
-          )}
         </div>
       </div>
 
       {/* 表格区域 - 始终显示 */}
       <div className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1 w-full">
-          <Table className="w-full">
+          {isMobile ? (
+            // 移动端卡片布局
+            <div className="space-y-3 p-1">
+              {loading ? (
+                <div className="text-center py-8 text-gray-600">加载中...</div>
+              ) : Object.keys(groupedReviews).length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <div className="flex flex-col items-center space-y-2">
+                    <FileText className="h-12 w-12 text-gray-300" />
+                    <p className="text-lg">暂无月度评审数据</p>
+                    <p className="text-sm text-gray-400">请点击"月度评审发起"按钮开始新的评审</p>
+                  </div>
+                </div>
+              ) : (
+                Object.entries(groupedReviews).map(([groupKey, reviewsInGroup]) => (
+                  <div key={groupKey} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    {/* 会议标题行 */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 text-sm leading-tight mb-1">
+                          {(() => {
+                            if (groupKey === "未分组") return "未分组"
+                            const parts = groupKey.split('_')
+                            if (parts.length >= 2) {
+                              return parts[0] + '_' + parts[1]
+                            }
+                            return groupKey
+                          })()} ({reviewsInGroup.length}个项目)
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          评审时间: {reviewsInGroup[0]?.reviewDate || '-'}
+                        </p>
+                      </div>
+                      <div className="ml-3 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleMeetingExpansion(groupKey)}
+                          className="p-1 h-6 w-6"
+                        >
+                          {expandedMeetings.has(groupKey) ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* 会议信息网格 */}
+                    <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">支出总金额:</span>
+                        <span className="ml-1 text-gray-900">{formatAmount(calculateGroupTotalExpense(reviewsInGroup, includeTax))}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">收入总金额:</span>
+                        <span className="ml-1 text-gray-900">{formatAmount(calculateGroupTotalIncome(reviewsInGroup, includeTax))}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">通过项目:</span>
+                        <span className="ml-1 text-gray-900">{reviewsInGroup.filter(r => r.status === "已评审").length}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">通过率:</span>
+                        <span className="ml-1 text-green-600 font-medium">
+                          {reviewsInGroup.length > 0 ? 
+                            ((reviewsInGroup.filter(r => r.status === "已评审").length / reviewsInGroup.length) * 100).toFixed(1) + '%' 
+                            : '0%'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* 操作按钮 */}
+                    {reviewsInGroup.every(r => r.status === "已评审" || r.status === "已驳回") && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              setCurrentApprovalGroup(groupKey)
+                              setCurrentApprovalReviews(reviewsInGroup)
+                              setSelectedApprovalProjects([])
+                              setApprovalTemplateType(null)
+                              setApprovalTableData({})
+                              setIsApprovalSubmitted(false)
+                              setShowCreateNewReport(false)
+                              
+                              try {
+                                const reports = await getApprovalReportsByGroupAction(groupKey)
+                                setExistingApprovalReports(reports)
+                              } catch (error) {
+                                console.error('Failed to load approval reports:', error)
+                                setExistingApprovalReports([])
+                              }
+                              
+                              setIsApprovalReportModalOpen(true)
+                            }}
+                            className="h-7 px-2 text-xs text-green-600 hover:text-green-700"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            批复报告
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              setCurrentMeetingGroup(groupKey)
+                              setMeetingMinutesContent("")
+                              setFileUploadStatus('idle')
+                              setUploadMessage("")
+                              setIsEditing(false)
+                              setUploadedFile(null)
+                              setIsSaving(false)
+                              setIsSubmitted(false)
+                              setExistingMinutes(null)
+                              setSubmittedRecord(null)
+                              
+                              try {
+                                const existingRecord = await getMeetingMinutesByGroupAction(groupKey)
+                                if (existingRecord) {
+                                  setExistingMinutes(existingRecord)
+                                  setMeetingMinutesContent(existingRecord.content)
+                                  setIsSubmitted(true)
+                                  setSubmittedRecord(existingRecord)
+                                }
+                              } catch (error) {
+                                console.error('Failed to load meeting minutes:', error)
+                              }
+                              
+                              setIsMeetingMinutesModalOpen(true)
+                            }}
+                            className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700"
+                          >
+                            <ClipboardList className="h-3 w-3 mr-1" />
+                            会议纪要
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* 展开的项目列表 */}
+                    {expandedMeetings.has(groupKey) && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="space-y-2">
+                          {reviewsInGroup.map((review) => (
+                            <div key={review.id} className="bg-gray-50 rounded p-2 text-xs">
+                              <div className="font-medium">{review.projectName}</div>
+                              <div className="text-gray-600 mt-1">
+                                状态: <span className={`inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ${
+                                  review.status === '已评审' ? 'bg-green-100 text-green-800' :
+                                  review.status === '已驳回' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {review.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            // 桌面端表格布局
+            <Table className="w-full">
             <TableHeader>
               <TableRow className="h-12">
                 <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3 w-[40px]"></TableHead>
@@ -847,6 +1036,7 @@ export default function MonthlyReviewsEmbedded() {
               )}
             </TableBody>
           </Table>
+          )}
         </ScrollArea>
       </div>
     </div>
