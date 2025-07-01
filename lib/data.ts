@@ -487,7 +487,12 @@ const saveToLocalStorage = (key: string, data: any) => {
     try {
       const fs = require('fs')
       const path = require('path')
-      const dataDir = path.join(process.cwd(), 'data')
+      const os = require('os')
+      
+      // 优先使用临时目录，确保有写入权限
+      const baseDir = process.env.DATA_DIR || 
+                     (fs.existsSync('/tmp') ? '/tmp' : os.tmpdir())
+      const dataDir = path.join(baseDir, 'zhjh-data')
       
       // 确保data目录存在
       if (!fs.existsSync(dataDir)) {
@@ -499,6 +504,12 @@ const saveToLocalStorage = (key: string, data: any) => {
       console.log(`Server-side data saved to file: ${filePath}`)
     } catch (error) {
       console.error('Failed to save to file system:', error)
+      // 如果文件系统保存失败，尝试使用内存缓存
+      if (!global.memoryCache) {
+        global.memoryCache = new Map()
+      }
+      global.memoryCache.set(key, data)
+      console.log(`Fallback: data saved to memory cache for key: ${key}`)
     }
   }
 }
@@ -519,7 +530,13 @@ const loadFromLocalStorage = (key: string, defaultValue: any) => {
     try {
       const fs = require('fs')
       const path = require('path')
-      const filePath = path.join(process.cwd(), 'data', `${key}.json`)
+      const os = require('os')
+      
+      // 优先使用临时目录，与保存逻辑保持一致
+      const baseDir = process.env.DATA_DIR || 
+                     (fs.existsSync('/tmp') ? '/tmp' : os.tmpdir())
+      const dataDir = path.join(baseDir, 'zhjh-data')
+      const filePath = path.join(dataDir, `${key}.json`)
       
       if (fs.existsSync(filePath)) {
         const fileContent = fs.readFileSync(filePath, 'utf8')
@@ -529,6 +546,12 @@ const loadFromLocalStorage = (key: string, defaultValue: any) => {
       }
     } catch (error) {
       console.error('Failed to load from file system:', error)
+      
+      // 如果文件系统加载失败，尝试从内存缓存加载
+      if (global.memoryCache && global.memoryCache.has(key)) {
+        console.log(`Fallback: data loaded from memory cache for key: ${key}`)
+        return global.memoryCache.get(key)
+      }
     }
   }
   return defaultValue
