@@ -703,7 +703,7 @@ export default function MonthlyReviewsEmbedded() {
                                   className="text-green-600 hover:text-green-700 text-xs px-2 py-1"
                                 >
                                   <FileText className="h-3 w-3 mr-1" />
-                                  发起批复表
+                                  发起批复报告
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -863,42 +863,16 @@ export default function MonthlyReviewsEmbedded() {
         <form onSubmit={handleSaveReview}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="project-select" className="text-right">
+              <Label htmlFor="project-name" className="text-right">
                 项目名称
               </Label>
-              {originalReviewStatus !== "" && originalReviewStatus !== "待评审" ? (
-                <Input
-                  value={currentReview?.projectName || ""}
-                  className="col-span-3"
-                  disabled={true}
-                  readOnly={true}
-                />
-              ) : (
-                <Select
-                  value={currentReview?.projectId || ""}
-                  onValueChange={(value) => {
-                    const selectedProject = allCenterProjects.find(p => p.id === value)
-                    if (selectedProject && currentReview) {
-                      setCurrentReview({
-                        ...currentReview,
-                        projectId: value,
-                        projectName: selectedProject.name
-                      })
-                    }
-                  }}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="选择项目" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allCenterProjects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name} ({project.id})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Input
+                id="project-name"
+                value={currentReview?.projectName || ""}
+                className="col-span-3"
+                disabled={true}
+                readOnly={true}
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="review-date" className="text-right">
@@ -908,10 +882,9 @@ export default function MonthlyReviewsEmbedded() {
                 id="review-date"
                 type="date"
                 value={currentReview?.reviewDate || ""}
-                onChange={(e) => setCurrentReview(prev => prev ? { ...prev, reviewDate: e.target.value } : null)}
                 className="col-span-3"
-                disabled={originalReviewStatus !== "" && originalReviewStatus !== "待评审"}
-                required
+                disabled={true}
+                readOnly={true}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -921,10 +894,9 @@ export default function MonthlyReviewsEmbedded() {
               <Input
                 id="reviewer"
                 value={currentReview?.reviewer || ""}
-                onChange={(e) => setCurrentReview(prev => prev ? { ...prev, reviewer: e.target.value } : null)}
                 className="col-span-3"
-                disabled={originalReviewStatus !== "" && originalReviewStatus !== "待评审"}
-                required
+                disabled={true}
+                readOnly={true}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">

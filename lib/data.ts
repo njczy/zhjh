@@ -435,60 +435,39 @@ const generateMockProjects = (): Project[] => {
   // 获取所有中心专职角色的用户
   const centerSpecialists = mockUsers.filter(u => u.role === "中心专职")
   
-  // 为每个中心专职用户创建一个状态为"下达"的项目，并确保至少有3个下达项目以匹配合同数量
-  const deliveredProjectNames = [
-    "智能化监测系统项目",
-    "创新研发平台建设",
-    "数据分析平台建设",
-    "质量管理系统升级",
-    "设备维护管理系统",
-    "运营效率优化项目"
-  ]
-
-  // 确保至少生成3个"下达"状态的项目以匹配合同数量
-  const minDeliveredProjects = Math.max(3, centerSpecialists.length)
-  
-  for (let i = 0; i < Math.min(minDeliveredProjects, deliveredProjectNames.length); i++) {
-    const specialist = centerSpecialists[i % centerSpecialists.length] // 如果专家数量不够，循环使用
-    const projectName = deliveredProjectNames[i]
-    const project = createProject(projectName, specialist, "下达")
-    projects.push(project)
+  // 为每个中心专职在每种状态下各生成一条数据
+  const statusProjectTemplates = {
+    "编制": [
+      "技术培训体系建设",
+      "质量检测流程优化"
+    ],
+    "评审": [
+      "设备管理信息化改造",
+      "客户服务平台升级"
+    ],
+    "批复": [
+      "实验室安全管理系统",
+      "机房环境改造项目"
+    ],
+    "下达": [
+      "智能化监测系统项目",
+      "创新研发平台建设",
+      "数据分析平台建设",
+      "质量管理系统升级",
+      "设备维护管理系统",
+      "运营效率优化项目"
+    ]
   }
 
-  // 添加其他状态的项目，确保覆盖完整的项目生命周期
-  const editingProjectNames = [
-    "技术培训体系建设",
-    "质量检测流程优化"
-  ]
-  
-  const reviewingProjectNames = [
-    "设备管理信息化改造",
-    "客户服务平台升级"
-  ]
-  
-  const approvedProjectNames = [
-    "实验室安全管理系统"
-  ]
-
-  // 创建编制状态项目
-  editingProjectNames.forEach((name, index) => {
-    const owner = centerSpecialists[index % centerSpecialists.length]
-    const project = createProject(name, owner, "编制")
-    projects.push(project)
-  })
-  
-  // 创建评审状态项目（这些项目可以进行月度评审）
-  reviewingProjectNames.forEach((name, index) => {
-    const owner = centerSpecialists[index % centerSpecialists.length]
-    const project = createProject(name, owner, "评审")
-    projects.push(project)
-  })
-  
-  // 创建批复状态项目
-  approvedProjectNames.forEach((name, index) => {
-    const owner = centerSpecialists[index % centerSpecialists.length]
-    const project = createProject(name, owner, "批复")
-    projects.push(project)
+  // 为每个中心专职在每种状态下创建一条项目数据
+  centerSpecialists.forEach((specialist, specialistIndex) => {
+    Object.entries(statusProjectTemplates).forEach(([status, projectNames]) => {
+      // 每个中心专职在每种状态下只选择一个项目
+      const projectName = projectNames[specialistIndex % projectNames.length]
+      const project = createProject(projectName, specialist, status as ProjectStatus)
+      projects.push(project)
+      projectCodeCounter++
+    })
   })
 
   return projects
@@ -592,7 +571,7 @@ export const initializeData = async () => {
   if (typeof window !== 'undefined') {
     // 只清除应用相关的数据
     const keysToRemove = [
-      'projects', 'contracts', 'reserve_monthly_reviews', 'approvals',
+      'reserve_projects', 'contracts', 'reserve_monthly_reviews', 'approvals',
       'progress_reimbursements', 'invoice_managements', 'audit_logs',
       'payment_records', 'project_settlements', 'bank_transactions',
       'match_results', 'adjustment_records', 'bidding_documents',
@@ -622,7 +601,7 @@ export const initializeData = async () => {
   const newProjects = generateMockProjects()
   
   // 保存到localStorage和内存
-  saveToLocalStorage('projects', newProjects)
+  saveToLocalStorage('reserve_projects', newProjects)
   projects = newProjects
   
   // 生成合同数据（传递新生成的项目数据）
