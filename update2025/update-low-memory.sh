@@ -15,6 +15,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# 检查是否为root用户并设置命令前缀
+if [ "$EUID" -eq 0 ]; then
+    SUDO_CMD=""
+    log_warn "检测到root用户运行，将调整相关配置..."
+else
+    SUDO_CMD="sudo"
+fi
+
 # 日志函数
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -91,12 +99,12 @@ create_temp_swap() {
     CURRENT_SWAP=$(free -m | awk 'NR==3{print $2}')
     
     if [ "$CURRENT_SWAP" -lt 2000 ]; then
-        sudo fallocate -l 2G /tmp/update-swap 2>/dev/null || \
-        sudo dd if=/dev/zero of=/tmp/update-swap bs=1M count=2048
+        $SUDO_CMD fallocate -l 2G /tmp/update-swap 2>/dev/null || \
+        $SUDO_CMD dd if=/dev/zero of=/tmp/update-swap bs=1M count=2048
         
-        sudo chmod 600 /tmp/update-swap
-        sudo mkswap /tmp/update-swap
-        sudo swapon /tmp/update-swap
+        $SUDO_CMD chmod 600 /tmp/update-swap
+        $SUDO_CMD mkswap /tmp/update-swap
+        $SUDO_CMD swapon /tmp/update-swap
         
         log_success "临时swap文件创建成功"
         
@@ -111,8 +119,8 @@ create_temp_swap() {
 cleanup_swap() {
     if [ -f /tmp/update-swap ]; then
         log_info "清理临时swap文件..."
-        sudo swapoff /tmp/update-swap 2>/dev/null || true
-        sudo rm -f /tmp/update-swap
+        $SUDO_CMD swapoff /tmp/update-swap 2>/dev/null || true
+        $SUDO_CMD rm -f /tmp/update-swap
     fi
 }
 
@@ -217,13 +225,13 @@ prepare_environment() {
     
     # 停止现有容器
     log_info "停止现有容器..."
-    sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml down 2>/dev/null || true
-    sudo $DOCKER_COMPOSE_CMD down 2>/dev/null || true
+    $SUDO_CMD $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml down 2>/dev/null || true
+    $SUDO_CMD $DOCKER_COMPOSE_CMD down 2>/dev/null || true
     
     # 清理Docker资源
     log_info "清理Docker资源..."
-    sudo docker system prune -f --volumes
-    sudo docker builder prune -f
+    $SUDO_CMD docker system prune -f --volumes
+    $SUDO_CMD docker builder prune -f
     
     # 清理项目缓存
     log_info "清理项目缓存..."
@@ -233,10 +241,10 @@ prepare_environment() {
     
     # 设置Docker内存限制
     log_info "配置Docker资源限制..."
-    sudo mkdir -p /etc/docker
+    $SUDO_CMD mkdir -p /etc/docker
     
     # 创建或更新Docker daemon配置
-    cat << EOF | sudo tee /etc/docker/daemon.json > /dev/null
+    cat << EOF | $SUDO_CMD tee /etc/docker/daemon.json > /dev/null
 {
   "registry-mirrors": ["https://docker.m.daocloud.io"],
   "log-driver": "json-file",
@@ -254,7 +262,7 @@ prepare_environment() {
 }
 EOF
     
-    sudo systemctl restart docker
+    $SUDO_CMD systemctl restart docker
     sleep 5
     
     log_success "环境准备完成"
@@ -289,7 +297,7 @@ EOF
     log_info "开始构建Docker镜像..."
     log_warn "⚠️  构建过程可能需要30-50分钟，请耐心等待..."
     
-    if timeout 3600 sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml build --no-cache; then
+    if timeout 3600 $SUDO_CMD $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml build --no-cache; then
         log_success "Docker镜像构建成功"
     else
         kill $MONITOR_PID 2>/dev/null || true
@@ -304,7 +312,7 @@ EOF
     
     # 启动容器
     log_info "启动Docker容器..."
-    if sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml up -d; then
+    if $SUDO_CMD $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml up -d; then
         log_success "容器启动成功"
     else
         log_error "容器启动失败"
@@ -316,12 +324,12 @@ EOF
     sleep 15
     
     # 检查容器状态
-    if sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml ps | grep -q "Up"; then
+    if $SUDO_CMD $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml ps | grep -q "Up"; then
         log_success "容器运行正常"
     else
         log_error "容器启动异常"
         log_info "查看容器日志："
-        sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs --tail=20
+        $SUDO_CMD $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs --tail=20
         exit 1
     fi
 }
@@ -331,8 +339,8 @@ cleanup_and_finish() {
     log_info "清理临时文件..."
     
     # 清理Docker资源
-    sudo docker image prune -f
-    sudo docker builder prune -f
+    $SUDO_CMD docker image prune -f
+    $SUDO_CMD docker builder prune -f
     
     # 清理临时文件
     rm -f /tmp/update-monitor.sh
@@ -340,18 +348,29 @@ cleanup_and_finish() {
     log_success "更新完成！"
     echo ""
     echo "📊 容器状态："
-    sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml ps
+    $SUDO_CMD $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml ps
     echo ""
     echo "🌐 应用应该可以通过 http://your-server-ip 访问"
     echo "📋 常用管理命令："
-    echo "  查看日志: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs -f app"
-    echo "  重启服务: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml restart app"
-    echo "  停止服务: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml down"
-    echo ""
-    echo "💡 如果遇到问题，请查看："
-    echo "  - 构建日志: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs"
-    echo "  - 系统资源: free -h && df -h"
-    echo "  - Docker状态: sudo docker stats"
+    if [ "$EUID" -eq 0 ]; then
+        echo "  查看日志: $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs -f app"
+        echo "  重启服务: $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml restart app"
+        echo "  停止服务: $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml down"
+        echo ""
+        echo "💡 如果遇到问题，请查看："
+        echo "  - 构建日志: $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs"
+        echo "  - 系统资源: free -h && df -h"
+        echo "  - Docker状态: docker stats"
+    else
+        echo "  查看日志: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs -f app"
+        echo "  重启服务: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml restart app"
+        echo "  停止服务: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml down"
+        echo ""
+        echo "💡 如果遇到问题，请查看："
+        echo "  - 构建日志: sudo $DOCKER_COMPOSE_CMD -f docker-compose.low-memory.yml logs"
+        echo "  - 系统资源: free -h && df -h"
+        echo "  - Docker状态: sudo docker stats"
+    fi
 }
 
 # 主函数
@@ -359,12 +378,6 @@ main() {
     echo "=========================================="
     echo "🚀 2核2G服务器低内存更新脚本"
     echo "=========================================="
-    
-    # 检查是否为root用户
-    if [ "$EUID" -eq 0 ]; then
-        log_error "请不要使用root用户运行此脚本"
-        exit 1
-    fi
     
     # 检查系统资源
     check_system_resources
