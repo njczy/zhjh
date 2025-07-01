@@ -8,7 +8,7 @@
     "build": "next build",
     "build:win": "powershell -ExecutionPolicy Bypass -File build-win.ps1",
     "build:linux": "bash build-linux.sh",
-    "build:docker": "bash build-linux.sh", 
+    "build:docker": "bash build-linux.sh",
     "build:standalone": "bash build-linux.sh",
     "start": "next start",
     "lint": "next lint"
@@ -67,7 +67,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@stagewise/toolbar-next": "^0.4.6",
+    "@stagewise/toolbar-next": "^0.4.9",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -76,8 +76,8 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
-    "@next/swc-linux-x64-gnu": "^15.3.4",
-    "@next/swc-darwin-arm64": "^15.3.4"
+    "@next/swc-darwin-arm64": "^15.3.4",
+    "@next/swc-linux-x64-gnu": "^15.3.4"
   },
   "os": [
     "darwin",
