@@ -15,14 +15,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 检查是否为root用户并设置命令前缀
-if [ "$EUID" -eq 0 ]; then
-    SUDO_CMD=""
-    log_warn "检测到root用户运行，将调整相关配置..."
-else
-    SUDO_CMD="sudo"
-fi
-
 # 日志函数
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -39,6 +31,14 @@ log_error() {
 log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
+
+# 检查是否为root用户并设置命令前缀
+if [ "$EUID" -eq 0 ]; then
+    SUDO_CMD=""
+    log_warn "检测到root用户运行，将调整相关配置..."
+else
+    SUDO_CMD="sudo"
+fi
 
 # 检测Docker Compose命令
 DOCKER_COMPOSE_CMD=""
