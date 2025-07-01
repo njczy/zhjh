@@ -390,20 +390,6 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
     }
   }
 
-  // 初始化计划
-  const handleInitializePlans = async () => {
-    setLoading(true)
-    try {
-      await initializeYearlyPlansAction()
-      await fetchData()
-      alert('计划初始化成功！')
-    } catch (error) {
-      console.error('初始化计划失败:', error)
-      alert('初始化计划失败，请重试')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // 打开计划编制对话框
   const handleOpenCompilation = (plan: ComprehensivePlan | null) => {
@@ -438,24 +424,13 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
 
   return (
     <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
-      {/* 页面标题和操作按钮 */}
+      {/* 页面标题 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
         <div className="flex items-center">
           <div>
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">计划编制及调整</h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">管理年度综合计划的编制和调整</p>
           </div>
-        </div>
-        <div className="flex flex-row gap-2 sm:gap-3">
-          <Button 
-            onClick={handleInitializePlans} 
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 text-sm"
-          >
-            <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">初始化计划</span>
-            <span className="sm:hidden">初始化</span>
-          </Button>
         </div>
       </div>
 
@@ -482,13 +457,11 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
         </div>
       </div>
 
-      {/* 筛选条件和操作按钮 */}
-      <div className={cn(
-        "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0",
-        isMobile ? "flex-col" : "flex-row"
-      )}>
-        <div className={cn(isMobile ? "w-full" : "w-[300px]")}>
-          <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
+      {/* 搜索和筛选区域 */}
+      <div className="mb-3 sm:mb-4 lg:mb-6 space-y-3 sm:space-y-4 flex-shrink-0">
+        {/* 搜索栏 - 独立一行 */}
+        <div className="w-full">
+          <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-2">
             搜索项目
           </Label>
           <div className="relative">
@@ -498,98 +471,101 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               placeholder="搜索项目名称、负责人或部门"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-10"
             />
           </div>
         </div>
 
-        <div className={cn(isMobile ? "w-full" : "w-[130px]")}>
-          <Label className="block text-sm font-medium text-gray-700 mb-1">项目状态</Label>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="批复">批复</SelectItem>
-              <SelectItem value="下达">下达</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* 筛选条件 - 分两行布局 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-1">项目状态</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="批复">批复</SelectItem>
+                <SelectItem value="下达">下达</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className={cn(isMobile ? "w-full" : "w-[140px]")}>
-          <Label className="block text-sm font-medium text-gray-700 mb-1">责任部门</Label>
-          <Select value={centerFilter} onValueChange={setCenterFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              {centerOptions.map(center => (
-                <SelectItem key={center} value={center}>{center}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-1">责任部门</Label>
+            <Select value={centerFilter} onValueChange={setCenterFilter}>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部部门</SelectItem>
+                {centerOptions.map(center => (
+                  <SelectItem key={center} value={center}>{center}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* 时间筛选 */}
-        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
-          <Label className="block text-sm font-medium text-gray-700 mb-1">
-            开始日期
-          </Label>
-          <EnhancedDatePicker
-            date={startDateFilter}
-            onDateChange={setStartDateFilter}
-            placeholder="开始日期"
-          />
-        </div>
-
-        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
-          <Label className="block text-sm font-medium text-gray-700 mb-1">
-            结束日期
-          </Label>
-          <EnhancedDatePicker
-            date={endDateFilter}
-            onDateChange={setEndDateFilter}
-            placeholder="结束日期"
-          />
-        </div>
-
-        {/* 操作按钮 */}
-        <div className={cn("flex gap-2", isMobile ? "w-full flex-col" : "flex-row items-end")}>
-          <Button 
-            onClick={() => {
-              const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
-              handleOpenCompilation(currentSelectedPlan || null)
-            }}
-            disabled={!selectedPlanId}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm"
-          >
-            <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">计划编制</span>
-            <span className="sm:hidden">编制</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearchTerm("")
-              setStatusFilter("all")
-              setCenterFilter("all")
-              setStartDateFilter(undefined)
-              setEndDateFilter(undefined)
-              setSelectedProjectIds([])
-            }}
-            size="sm"
-            className="px-3 py-2 text-sm whitespace-nowrap"
-          >
-            <RotateCcw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">重置筛选</span>
-            <span className="sm:hidden">重置</span>
-          </Button>
+          <div className="sm:col-span-2 lg:col-span-1">
+            <Label className="block text-sm font-medium text-gray-700 mb-1">
+              实施时间范围
+            </Label>
+            <div className="flex gap-2 items-center">
+              <EnhancedDatePicker
+                date={startDateFilter}
+                onDateChange={setStartDateFilter}
+                placeholder="开始日期"
+              />
+              <span className="text-gray-400 text-sm">至</span>
+              <EnhancedDatePicker
+                date={endDateFilter}
+                onDateChange={setEndDateFilter}
+                placeholder="结束日期"
+              />
+            </div>
+          </div>
         </div>
 
         {/* 操作按钮区域 */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between items-start sm:items-center pt-2 border-t border-gray-100">
+          <div className="text-xs text-gray-600">
+            显示 {filteredCompiledProjects.length} 个项目
+            {selectedProjectIds.length > 0 && (
+              <span className="ml-2 text-blue-600">已选择 {selectedProjectIds.length} 项</span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("")
+                setStatusFilter("all")
+                setCenterFilter("all")
+                setStartDateFilter(undefined)
+                setEndDateFilter(undefined)
+                setSelectedProjectIds([])
+              }}
+              size="sm"
+              className="px-3 py-2 text-sm"
+            >
+              <RotateCcw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              重置筛选
+            </Button>
+            <Button 
+              onClick={() => {
+                const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
+                handleOpenCompilation(currentSelectedPlan || null)
+              }}
+              disabled={!selectedPlanId}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm"
+            >
+              <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              计划编制
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* 可编制项目列表 */}
