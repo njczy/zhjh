@@ -35,6 +35,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
+import { useIsMobile } from "@/components/ui/use-mobile"
 
 import { 
   getCurrentYearPlansAction, 
@@ -194,6 +195,7 @@ interface ComprehensivePlanManagementProps {
 
 export default function ComprehensivePlanManagement({ currentUser }: ComprehensivePlanManagementProps) {
   // 状态管理
+  const isMobile = useIsMobile()
   const [plans, setPlans] = useState<ComprehensivePlan[]>([])
   const [compiledProjects, setCompiledProjects] = useState<Project[]>([]) // 已编制的项目
   const [availableProjects, setAvailableProjects] = useState<Project[]>([]) // 可编制的项目（用于对话框）
@@ -388,6 +390,31 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
     }
   }
 
+  // 初始化计划
+  const handleInitializePlans = async () => {
+    setLoading(true)
+    try {
+      await initializeYearlyPlansAction()
+      await fetchData()
+      alert('计划初始化成功！')
+    } catch (error) {
+      console.error('初始化计划失败:', error)
+      alert('初始化计划失败，请重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 打开计划编制对话框
+  const handleOpenCompilation = (plan: ComprehensivePlan | null) => {
+    if (!plan) {
+      alert('请先选择一个综合计划')
+      return
+    }
+    setSelectedPlan(plan)
+    setIsCompilationDialogOpen(true)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -410,11 +437,27 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-      {/* 页面标题 */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">计划编制及调整</h2>
-            </div>
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      {/* 页面标题和操作按钮 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <div>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">计划编制及调整</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">管理年度综合计划的编制和调整</p>
+          </div>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
+          <Button 
+            onClick={handleInitializePlans} 
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 text-sm"
+          >
+            <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">初始化计划</span>
+            <span className="sm:hidden">初始化</span>
+          </Button>
+        </div>
+      </div>
 
       {/* 综合计划概览卡片 */}
       <div className="mb-4">
@@ -440,8 +483,11 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
       </div>
 
       {/* 筛选条件和操作按钮 */}
-      <div className="mb-6 flex gap-4 items-end flex-shrink-0">
-        <div className="w-[300px]">
+      <div className={cn(
+        "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0",
+        isMobile ? "flex-col" : "flex-row"
+      )}>
+        <div className={cn(isMobile ? "w-full" : "w-[300px]")}>
           <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
             搜索项目
           </Label>
@@ -457,7 +503,7 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
           </div>
         </div>
 
-        <div className="w-[130px]">
+        <div className={cn(isMobile ? "w-full" : "w-[130px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">项目状态</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger>
@@ -471,7 +517,7 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
           </Select>
         </div>
 
-        <div className="w-[140px]">
+        <div className={cn(isMobile ? "w-full" : "w-[140px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">责任部门</Label>
           <Select value={centerFilter} onValueChange={setCenterFilter}>
             <SelectTrigger>
@@ -487,7 +533,7 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
         </div>
 
         {/* 时间筛选 */}
-        <div className="w-[150px]">
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
             开始日期
           </Label>
@@ -498,7 +544,7 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
           />
         </div>
 
-        <div className="w-[150px]">
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
             结束日期
           </Label>
@@ -509,8 +555,21 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
           />
         </div>
 
-        {/* 重置筛选按钮 */}
-        <div className="flex items-end">
+        {/* 操作按钮 */}
+        <div className={cn("flex gap-2", isMobile ? "w-full flex-col" : "flex-row items-end")}>
+          <Button 
+            onClick={() => {
+              const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
+              handleOpenCompilation(currentSelectedPlan || null)
+            }}
+            disabled={!selectedPlanId}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm"
+          >
+            <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">计划编制</span>
+            <span className="sm:hidden">编制</span>
+          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -521,31 +580,16 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               setEndDateFilter(undefined)
               setSelectedProjectIds([])
             }}
-            className="whitespace-nowrap"
+            size="sm"
+            className="px-3 py-2 text-sm whitespace-nowrap"
           >
-            重置筛选
+            <RotateCcw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">重置筛选</span>
+            <span className="sm:hidden">重置</span>
           </Button>
         </div>
 
         {/* 操作按钮区域 */}
-        <div className="flex gap-3 ml-auto items-end">
-          <div className="text-xs text-gray-600 mr-2 whitespace-nowrap pb-2">
-            已选择 {selectedProjectIds.length} / {filteredCompiledProjects.length}
-          </div>
-          <Button 
-            onClick={() => {
-              // 根据当前选中的计划页签设置默认选择的计划
-              const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
-              if (currentSelectedPlan) {
-                setSelectedPlan(currentSelectedPlan)
-              }
-              setIsCompilationDialogOpen(true)
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" /> 计划编制
-          </Button>
-        </div>
       </div>
 
       {/* 可编制项目列表 */}
