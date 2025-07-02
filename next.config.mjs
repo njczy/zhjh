@@ -78,6 +78,14 @@ const nextConfig = {
       },
     }
     
+    // 确保CSS不被过度优化，保留响应式类
+    config.optimization.splitChunks.cacheGroups.styles = {
+      name: 'styles',
+      test: /\.(css|scss|sass)$/,
+      chunks: 'all',
+      enforce: true,
+    }
+    
     return config
   },
 }

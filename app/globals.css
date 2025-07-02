@@ -30,9 +30,48 @@ body {
     @apply block overflow-x-auto whitespace-nowrap;
   }
   
+  /* 移动端隐藏类 */
+  .mobile-hidden {
+    @apply hidden md:block;
+  }
+  
+  /* 桌面端隐藏类 */
+  .desktop-hidden {
+    @apply block md:hidden;
+  }
+  
+  /* 移动端网格 */
+  .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6;
+  }
+  
+  /* 强制响应式类生效 */
+  .force-mobile-responsive {
+    display: block !important;
+  }
+  
+  @media (min-width: 768px) {
+    .force-mobile-responsive {
+      display: table !important;
+    }
+  }
+  
   @media (max-width: 768px) {
     .mobile-responsive-table {
       @apply min-w-full;
+    }
+    
+    /* 强制移动端卡片布局 */
+    .mobile-card-layout {
+      display: block !important;
+    }
+    
+    .mobile-card-layout .hidden {
+      display: none !important;
+    }
+    
+    .mobile-card-layout .md\\:hidden {
+      display: block !important;
     }
   }
 }

@@ -6,7 +6,26 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./contexts/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
     "*.{js,ts,jsx,tsx,mdx}"
+  ],
+  // 确保所有响应式变体都被包含
+  safelist: [
+    'hidden',
+    'md:hidden',
+    'md:block',
+    'sm:hidden',
+    'sm:block',
+    'lg:hidden',
+    'lg:block',
+    'grid-cols-1',
+    'sm:grid-cols-2',
+    'md:grid-cols-2',
+    'lg:grid-cols-4',
+    'flex-col',
+    'sm:flex-row',
+    'md:flex-row'
   ],
   theme: {
   	extend: {

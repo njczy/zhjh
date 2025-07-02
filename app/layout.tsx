@@ -10,7 +10,13 @@ export const metadata: Metadata = {
   title: "电试院项目管理系统",
   description: "储备项目管理模块",
   generator: 'v0.dev',
-  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+  viewport: {
+    width: 'device-width',
+    initialScale: 1.0,
+    maximumScale: 1.0,
+    userScalable: false,
+    viewportFit: 'cover'
+  }
 }
 
 export default function RootLayout({

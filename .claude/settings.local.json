@@ -34,7 +34,9 @@
       "Bash(git commit:*)",
       "Bash(node:*)",
       "Bash(npm --version)",
-      "Bash(npm run start:*)"
+      "Bash(npm run start:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": []
   }
