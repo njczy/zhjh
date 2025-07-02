@@ -17,6 +17,7 @@ import { zhCN } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { addProjectAction, submitProjectForApprovalAction } from '@/app/actions'
 import { getAvailableApprovers } from '@/lib/data'
+import { useIsMobile } from "@/components/ui/use-mobile"
 
 // 增强的日期选择器组件，支持年份快速选择
 function EnhancedDatePicker({ 
@@ -205,6 +206,8 @@ interface AddProjectReserveProps {
 }
 
 export default function AddProjectReserve({ onBack, currentUser }: AddProjectReserveProps) {
+  const isMobile = useIsMobile()
+  
   // 获取当前用户对应的负责人列表
   const availableLeaders = getAvailableLeaders(currentUser)
   // 基本信息状态
@@ -473,7 +476,10 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
   }
 
   return (
-          <div className="w-[95%] mx-auto p-6 space-y-6">
+          <div className={cn(
+      "mx-auto space-y-6",
+      isMobile ? "w-full p-4" : "w-[95%] p-6"
+    )}>
       {/* 页面标题 */}
       <div className="flex items-center space-x-4 mb-6">
         <Button variant="ghost" onClick={onBack} className="p-2">
@@ -488,7 +494,12 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
           <CardTitle>基本信息</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={cn(
+            "grid gap-6",
+            isMobile 
+              ? "grid-cols-1 gap-4" 
+              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          )}>
             {/* 责任部门（只读） */}
             <div className="space-y-2">
               <Label>责任部门</Label>
@@ -586,7 +597,10 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
           </div>
 
           {/* 必要性、可行性、立项依据 - 一行展示 */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className={cn(
+            "grid gap-6",
+            isMobile ? "grid-cols-1 gap-4" : "grid-cols-3"
+          )}>
             {/* 必要性（必填） */}
             <div className="space-y-2">
               <Label>必要性 <span className="text-red-500">*</span></Label>
@@ -646,8 +660,12 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className={cn(
+            isMobile ? "overflow-x-auto" : "overflow-x-auto"
+          )}>
+            <Table className={cn(
+              isMobile ? "min-w-[800px]" : "w-full"
+            )}>
               <TableHeader>
                 <TableRow>
                   <TableHead>开始时间</TableHead>
@@ -729,7 +747,12 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
           <CardTitle>项目财务摘要</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div className={cn(
+            "grid gap-6",
+            isMobile 
+              ? "grid-cols-2 gap-4" 
+              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+          )}>
             <div className="space-y-2">
               <Label>项目总收入（含税）</Label>
               <Input 
@@ -844,7 +867,12 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
       </Card>
 
       {/* 底部操作按钮 */}
-      <div className="flex justify-end space-x-4 pt-6">
+      <div className={cn(
+        "pt-6",
+        isMobile 
+          ? "flex flex-col space-y-3 px-4" 
+          : "flex justify-end space-x-4"
+      )}>
         <Button variant="outline" onClick={onBack}>
           取消
         </Button>

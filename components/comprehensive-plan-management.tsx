@@ -18,7 +18,9 @@ import {
   FileText,
   RotateCcw,
   Eye,
-  CalendarIcon
+  CalendarIcon,
+  Menu,
+  X
 } from "lucide-react"
 import {
   Dialog,
@@ -215,6 +217,9 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
   
   // 项目详情查看状态
   const [viewingProject, setViewingProject] = useState<Project | null>(null)
+  
+  // 移动端筛选器切换状态
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   // 初始化数据
   useEffect(() => {
@@ -424,13 +429,27 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
 
   return (
     <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
-      {/* 页面标题 */}
+      {/* 页面标题和操作按钮 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
         <div className="flex items-center">
           <div>
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">计划编制及调整</h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">管理年度综合计划的编制和调整</p>
           </div>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
+          <Button 
+            onClick={() => {
+              const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
+              handleOpenCompilation(currentSelectedPlan || null)
+            }}
+            disabled={!selectedPlanId}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm"
+          >
+            <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            计划编制
+          </Button>
         </div>
       </div>
 
@@ -457,11 +476,30 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
         </div>
       </div>
 
-      {/* 搜索和筛选区域 */}
-      <div className="mb-3 sm:mb-4 lg:mb-6 space-y-3 sm:space-y-4 flex-shrink-0">
-        {/* 搜索栏 - 独立一行 */}
-        <div className="w-full">
-          <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-2">
+      {/* 移动端筛选器切换按钮 */}
+      {isMobile && (
+        <div className="mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="w-full flex items-center justify-between h-8 text-xs"
+          >
+            <span>筛选条件</span>
+            {showMobileFilters ? <X className="h-3 w-3" /> : <Menu className="h-3 w-3" />}
+          </Button>
+        </div>
+      )}
+
+      {/* 筛选器区域 */}
+      <div className={cn(
+        "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0",
+        isMobile ? (
+          showMobileFilters ? "flex-col items-stretch space-y-2" : "hidden"
+        ) : "flex-row"
+      )}>
+        <div className={cn(isMobile ? "w-full" : "w-[300px]")}>
+          <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
             搜索项目
           </Label>
           <div className="relative">
@@ -471,174 +509,150 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               placeholder="搜索项目名称、负责人或部门"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-10"
+              className="pl-9"
             />
           </div>
         </div>
 
-        {/* 筛选条件 - 分两行布局 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div>
-            <Label className="block text-sm font-medium text-gray-700 mb-1">项目状态</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="批复">批复</SelectItem>
-                <SelectItem value="下达">下达</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-gray-700 mb-1">责任部门</Label>
-            <Select value={centerFilter} onValueChange={setCenterFilter}>
-              <SelectTrigger className="h-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部部门</SelectItem>
-                {centerOptions.map(center => (
-                  <SelectItem key={center} value={center}>{center}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="sm:col-span-2 lg:col-span-1">
-            <Label className="block text-sm font-medium text-gray-700 mb-1">
-              实施时间范围
-            </Label>
-            <div className="flex gap-2 items-center">
-              <EnhancedDatePicker
-                date={startDateFilter}
-                onDateChange={setStartDateFilter}
-                placeholder="开始日期"
-              />
-              <span className="text-gray-400 text-sm">至</span>
-              <EnhancedDatePicker
-                date={endDateFilter}
-                onDateChange={setEndDateFilter}
-                placeholder="结束日期"
-              />
-            </div>
-          </div>
+        <div className={cn(isMobile ? "w-full" : "w-[130px]")}>
+          <Label className="block text-sm font-medium text-gray-700 mb-1">项目状态</Label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部</SelectItem>
+              <SelectItem value="批复">批复</SelectItem>
+              <SelectItem value="下达">下达</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* 操作按钮区域 */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between items-start sm:items-center pt-2 border-t border-gray-100">
-          <div className="text-xs text-gray-600">
-            显示 {filteredCompiledProjects.length} 个项目
-            {selectedProjectIds.length > 0 && (
-              <span className="ml-2 text-blue-600">已选择 {selectedProjectIds.length} 项</span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchTerm("")
-                setStatusFilter("all")
-                setCenterFilter("all")
-                setStartDateFilter(undefined)
-                setEndDateFilter(undefined)
-                setSelectedProjectIds([])
-              }}
-              size="sm"
-              className="px-3 py-2 text-sm"
-            >
-              <RotateCcw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-              重置筛选
-            </Button>
-            <Button 
-              onClick={() => {
-                const currentSelectedPlan = plans.find(p => p.id === selectedPlanId)
-                handleOpenCompilation(currentSelectedPlan || null)
-              }}
-              disabled={!selectedPlanId}
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm"
-            >
-              <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-              计划编制
-            </Button>
-          </div>
+        <div className={cn(isMobile ? "w-full" : "w-[140px]")}>
+          <Label className="block text-sm font-medium text-gray-700 mb-1">责任部门</Label>
+          <Select value={centerFilter} onValueChange={setCenterFilter}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部</SelectItem>
+              {centerOptions.map(center => (
+                <SelectItem key={center} value={center}>{center}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 时间筛选 */}
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
+          <Label className="block text-sm font-medium text-gray-700 mb-1">
+            开始日期
+          </Label>
+          <EnhancedDatePicker
+            date={startDateFilter}
+            onDateChange={setStartDateFilter}
+            placeholder="开始日期"
+          />
+        </div>
+
+        <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
+          <Label className="block text-sm font-medium text-gray-700 mb-1">
+            结束日期
+          </Label>
+          <EnhancedDatePicker
+            date={endDateFilter}
+            onDateChange={setEndDateFilter}
+            placeholder="结束日期"
+          />
+        </div>
+
+        {/* 重置筛选按钮 */}
+        <div className="flex items-end">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearchTerm("")
+              setStatusFilter("all")
+              setCenterFilter("all")
+              setStartDateFilter(undefined)
+              setEndDateFilter(undefined)
+              setSelectedProjectIds([])
+            }}
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            重置筛选
+          </Button>
         </div>
       </div>
 
+
       {/* 可编制项目列表 */}
-      <div className="flex-1 overflow-hidden">        
+      <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
-          <Table className="w-full table-fixed text-sm">
-            <TableHeader>
-              <TableRow className="h-12 bg-gray-50">
-                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">
-                  <div className="flex items-center justify-center">
-                    <Checkbox
-                      checked={selectedProjectIds.length === filteredCompiledProjects.length && filteredCompiledProjects.length > 0}
-                      onCheckedChange={handleSelectAllCompiled}
-                      className="w-4 h-4"
-                    />
-                  </div>
-                </TableHead>
-                <TableHead className="w-[20%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目名称</TableHead>
-                <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目负责人</TableHead>
-                <TableHead className="w-[12%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">责任部门</TableHead>
-                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">投入(万元)</TableHead>
-                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">产出(万元)</TableHead>
-                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">实施年份</TableHead>
-                <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目状态</TableHead>
-                <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">备注</TableHead>
-                <TableHead className="w-[16%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          {isMobile ? (
+            // 移动端卡片布局
+            <div className="space-y-3 p-1">
               {filteredCompiledProjects.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-500">
-                      <AlertCircle className="h-8 w-8 mb-2" />
-                      <p className="text-sm font-medium">暂无已编制项目</p>
-                      <p className="text-xs text-gray-400">请通过"计划编制"按钮将储备项目添加到综合计划中</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <div className="text-center py-12 text-gray-500">
+                  <div className="flex flex-col items-center space-y-2">
+                    <AlertCircle className="h-12 w-12 text-gray-300" />
+                    <p className="text-lg">暂无已编制项目</p>
+                    <p className="text-sm text-gray-400">请通过"计划编制"按钮将储备项目添加到综合计划中</p>
+                  </div>
+                </div>
               ) : (
                 filteredCompiledProjects.map((project, index) => (
-                  <TableRow key={project.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <TableCell className="text-center px-2 py-3 align-middle">
-                      <div className="flex items-center justify-center">
+                  <div key={project.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    {/* 卡片头部 */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start space-x-3 flex-1 min-w-0">
                         <Checkbox
                           checked={selectedProjectIds.includes(project.id)}
                           onCheckedChange={(checked) => handleProjectSelect(project.id, checked as boolean)}
-                          className="w-4 h-4"
+                          className="w-4 h-4 mt-1 flex-shrink-0"
                         />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 text-sm leading-tight mb-1 break-words">
+                            {project.name}
+                          </h3>
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-left px-3 py-3 font-medium align-middle">{project.name}</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">{project.owner}</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">{getProjectAffiliationDisplay(project)}</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">2025</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">
-                      <Badge className={statusColors[project.status]}>
-                        {project.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
-                    <TableCell className="text-center px-2 py-3 align-middle">
-                      <div className="flex flex-wrap gap-1 justify-center">
+                    </div>
+                    
+                    {/* 项目信息网格 */}
+                    <div className="space-y-2 mb-3 text-xs">
+                      {/* 第一行：负责人和责任部门 */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-gray-500">负责人: {project.owner}</span>
+                        </div>
+                        <div className="flex justify-end">
+                          <span className="text-gray-500">责任部门: {getProjectAffiliationDisplay(project)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* 第二行：实施年份和状态 */}
+                      <div className="grid grid-cols-2 gap-4 items-center">
+                        <div>
+                          <span className="text-gray-500">实施年份: 2025</span>
+                        </div>
+                        <div className="flex justify-end">
+                          <Badge className={statusColors[project.status]}>
+                            {project.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 操作按钮 */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <div className="flex items-center space-x-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           className="h-7 px-2 text-xs"
-                          onClick={() => {
-                            // 查看项目详情
-                            setViewingProject(project)
-                          }}
+                          onClick={() => setViewingProject(project)}
                         >
                           <Eye className="h-3 w-3 mr-1" /> 查看
                         </Button>
@@ -646,20 +660,102 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
                           variant="outline" 
                           size="sm" 
                           className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            // 从综合计划中移除项目
-                            handleRemoveProject(project)
-                          }}
+                          onClick={() => handleRemoveProject(project)}
                         >
                           移除
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </div>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </div>
+          ) : (
+            // 桌面端表格布局
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow className="h-12 bg-gray-50">
+                  <TableHead className="w-16 text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap">
+                    <div className="flex items-center justify-center">
+                      <Checkbox
+                        checked={selectedProjectIds.length === filteredCompiledProjects.length && filteredCompiledProjects.length > 0}
+                        onCheckedChange={handleSelectAllCompiled}
+                        className="w-4 h-4"
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-left text-sm font-semibold text-gray-700 px-3 py-3 min-w-[200px]">项目名称</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-24 whitespace-nowrap">项目负责人</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-32 whitespace-nowrap">责任部门</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">投入(万元)</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">产出(万元)</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">实施年份</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">项目状态</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-16 whitespace-nowrap">备注</TableHead>
+                  <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-32 whitespace-nowrap">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCompiledProjects.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <AlertCircle className="h-8 w-8 mb-2" />
+                        <p className="text-sm font-medium">暂无已编制项目</p>
+                        <p className="text-xs text-gray-400">请通过"计划编制"按钮将储备项目添加到综合计划中</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredCompiledProjects.map((project, index) => (
+                    <TableRow key={project.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <TableCell className="text-center px-3 py-3">
+                        <div className="flex items-center justify-center">
+                          <Checkbox
+                            checked={selectedProjectIds.includes(project.id)}
+                            onCheckedChange={(checked) => handleProjectSelect(project.id, checked as boolean)}
+                            className="w-4 h-4"
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-left px-3 py-3 font-medium">{project.name}</TableCell>
+                      <TableCell className="text-center px-3 py-3">{project.owner}</TableCell>
+                      <TableCell className="text-center px-3 py-3">{getProjectAffiliationDisplay(project)}</TableCell>
+                      <TableCell className="text-center px-3 py-3">-</TableCell>
+                      <TableCell className="text-center px-3 py-3">-</TableCell>
+                      <TableCell className="text-center px-3 py-3">2025</TableCell>
+                      <TableCell className="text-center px-3 py-3">
+                        <Badge className={statusColors[project.status]}>
+                          {project.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center px-3 py-3">-</TableCell>
+                      <TableCell className="text-center px-3 py-3">
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 px-2 text-xs"
+                            onClick={() => setViewingProject(project)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" /> 查看
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                            onClick={() => handleRemoveProject(project)}
+                          >
+                            移除
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </ScrollArea>
       </div>
 
@@ -718,23 +814,23 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
               </div>
               
               <ScrollArea className="h-80 border rounded-md">
-                <Table className="w-full table-fixed text-sm">
+                <Table className="w-full">
                   <TableHeader>
                     <TableRow className="h-12 bg-gray-50">
-                      <TableHead className="w-[8%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">选择</TableHead>
-                      <TableHead className="w-[25%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目名称</TableHead>
-                      <TableHead className="w-[12%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目负责人</TableHead>
-                      <TableHead className="w-[15%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">责任部门</TableHead>
-                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">投入(万元)</TableHead>
-                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">产出(万元)</TableHead>
-                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">实施年份</TableHead>
-                      <TableHead className="w-[10%] text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap align-middle">项目状态</TableHead>
+                      <TableHead className="w-16 text-center text-sm font-semibold text-gray-700 px-3 py-3 whitespace-nowrap">选择</TableHead>
+                      <TableHead className="text-left text-sm font-semibold text-gray-700 px-3 py-3 min-w-[200px]">项目名称</TableHead>
+                      <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-24 whitespace-nowrap">项目负责人</TableHead>
+                      <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-32 whitespace-nowrap">责任部门</TableHead>
+                      <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">投入(万元)</TableHead>
+                      <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">产出(万元)</TableHead>
+                      <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">实施年份</TableHead>
+                      <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-20 whitespace-nowrap">项目状态</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAvailableProjects.map((project, index) => (
                       <TableRow key={project.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <TableCell className="text-center px-2 py-3 align-middle">
+                        <TableCell className="text-center px-3 py-3">
                           <div className="flex items-center justify-center">
                             <Checkbox
                               checked={selectedProjectIds.includes(project.id)}
@@ -743,13 +839,13 @@ export default function ComprehensivePlanManagement({ currentUser }: Comprehensi
                             />
                           </div>
                         </TableCell>
-                        <TableCell className="text-left px-3 py-3 font-medium align-middle">{project.name}</TableCell>
-                        <TableCell className="text-center px-2 py-3 align-middle">{project.owner}</TableCell>
-                        <TableCell className="text-center px-2 py-3 align-middle">{getProjectAffiliationDisplay(project)}</TableCell>
-                        <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
-                        <TableCell className="text-center px-2 py-3 align-middle">-</TableCell>
-                        <TableCell className="text-center px-2 py-3 align-middle">2025</TableCell>
-                        <TableCell className="text-center px-2 py-3 align-middle">
+                        <TableCell className="text-left px-3 py-3 font-medium">{project.name}</TableCell>
+                        <TableCell className="text-center px-3 py-3">{project.owner}</TableCell>
+                        <TableCell className="text-center px-3 py-3">{getProjectAffiliationDisplay(project)}</TableCell>
+                        <TableCell className="text-center px-3 py-3">-</TableCell>
+                        <TableCell className="text-center px-3 py-3">-</TableCell>
+                        <TableCell className="text-center px-3 py-3">2025</TableCell>
+                        <TableCell className="text-center px-3 py-3">
                           <Badge className={statusColors[project.status]}>
                             {project.status}
                           </Badge>

@@ -14,6 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Plus, Search, FileText, Upload, Eye, CheckCircle, XCircle, Clock, DollarSign, AlertTriangle } from 'lucide-react'
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 import { 
   User, 
   Contract, 
@@ -35,6 +37,8 @@ interface ProgressReimbursementManagementProps {
 }
 
 export default function ProgressReimbursementManagement({ currentUser }: ProgressReimbursementManagementProps) {
+  const isMobile = useIsMobile()
+  
   // 状态管理
   const [contracts, setContracts] = useState<Contract[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -389,25 +393,34 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
       {/* 页面标题和操作按钮 */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">进度报销管理</h1>
-          <p className="text-gray-600 mt-1">管理合同进度报销和审批流程</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <div>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">进度报销管理</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">管理合同进度报销和审批流程</p>
+          </div>
         </div>
-        {canCreateReimbursement && (
-          <Button onClick={handleCreateReimbursement} className="bg-green-600 hover:bg-green-700 text-white">
-            <Plus className="mr-2 h-4 w-4" />
-            新增进度报销
-          </Button>
-        )}
+        <div className="flex flex-row gap-2 sm:gap-3">
+          {canCreateReimbursement && (
+            <Button 
+              onClick={handleCreateReimbursement} 
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 text-sm"
+            >
+              <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">新增进度报销</span>
+              <span className="sm:hidden">新增</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
             <div className="flex-1">
               <Label htmlFor="search">搜索</Label>
               <div className="relative">
@@ -421,7 +434,7 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
                 />
               </div>
             </div>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <Label>状态筛选</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
@@ -448,59 +461,143 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
           <CardTitle>进度报销列表</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[600px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>合同编号</TableHead>
-                  <TableHead>合同名称</TableHead>
-                  <TableHead>进度类型</TableHead>
-                  <TableHead>报销类型</TableHead>
-                  <TableHead>报销金额</TableHead>
-                  <TableHead>提交人</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredReimbursements.map((reimbursement) => (
-                  <TableRow key={reimbursement.id}>
-                    <TableCell className="font-medium">{reimbursement.contractCode}</TableCell>
-                    <TableCell>{reimbursement.contractName}</TableCell>
-                    <TableCell>{getProgressTypeLabel(reimbursement.progressType)}</TableCell>
-                    <TableCell>{getReimbursementTypeLabel(reimbursement.reimbursementType)}</TableCell>
-                    <TableCell>¥{reimbursement.reimbursementAmount.toLocaleString()}</TableCell>
-                    <TableCell>{reimbursement.submittedBy}</TableCell>
-                    <TableCell>{getStatusBadge(reimbursement.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setViewingReimbursement(reimbursement)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {(reimbursement.status === 'submitted' && canApproveDept) || 
-                         (reimbursement.status === 'dept_manager_approved' && canApproveFinance) ? (
+          {/* 桌面端表格 */}
+          <div className="hidden md:block">
+            <ScrollArea className="h-[600px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>合同编号</TableHead>
+                    <TableHead>合同名称</TableHead>
+                    <TableHead>进度类型</TableHead>
+                    <TableHead>报销类型</TableHead>
+                    <TableHead>报销金额</TableHead>
+                    <TableHead>提交人</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReimbursements.map((reimbursement) => (
+                    <TableRow key={reimbursement.id}>
+                      <TableCell className="font-medium">{reimbursement.contractCode}</TableCell>
+                      <TableCell>{reimbursement.contractName}</TableCell>
+                      <TableCell>{getProgressTypeLabel(reimbursement.progressType)}</TableCell>
+                      <TableCell>{getReimbursementTypeLabel(reimbursement.reimbursementType)}</TableCell>
+                      <TableCell>¥{reimbursement.reimbursementAmount.toLocaleString()}</TableCell>
+                      <TableCell>{reimbursement.submittedBy}</TableCell>
+                      <TableCell>{getStatusBadge(reimbursement.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setApprovingReimbursement(reimbursement)
-                              setIsApprovalDialogOpen(true)
-                            }}
+                            onClick={() => setViewingReimbursement(reimbursement)}
                           >
-                            <CheckCircle className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        ) : null}
+                          {(reimbursement.status === 'submitted' && canApproveDept) || 
+                           (reimbursement.status === 'dept_manager_approved' && canApproveFinance) ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setApprovingReimbursement(reimbursement)
+                                setIsApprovalDialogOpen(true)
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+
+          {/* 移动端卡片布局 */}
+          <div className="md:hidden space-y-3 max-h-[600px] overflow-y-auto">
+            {filteredReimbursements.map((reimbursement) => (
+              <Card key={reimbursement.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* 头部信息 */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium text-lg">
+                          ¥{reimbursement.reimbursementAmount.toLocaleString()}
+                        </span>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+                      {getStatusBadge(reimbursement.status)}
+                    </div>
+
+                    {/* 合同信息 */}
+                    <div className="space-y-2">
+                      <div>
+                        <div className="font-medium">{reimbursement.contractName}</div>
+                        <div className="text-sm text-gray-500 font-mono">
+                          {reimbursement.contractCode}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          <span>{getProgressTypeLabel(reimbursement.progressType)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          <span>{getReimbursementTypeLabel(reimbursement.reimbursementType)}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-sm text-gray-600">
+                        提交人: {reimbursement.submittedBy}
+                      </div>
+                    </div>
+
+                    {/* 操作按钮 */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewingReimbursement(reimbursement)}
+                        className="flex-1"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        查看详情
+                      </Button>
+                      {(reimbursement.status === 'submitted' && canApproveDept) || 
+                       (reimbursement.status === 'dept_manager_approved' && canApproveFinance) ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setApprovingReimbursement(reimbursement)
+                            setIsApprovalDialogOpen(true)
+                          }}
+                          className="flex-1"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          审批
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {filteredReimbursements.length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                暂无进度报销数据
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -728,7 +825,7 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
             
             <div className="space-y-6">
               {/* 基本信息 */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-500">合同编号</Label>
                   <p className="mt-1">{viewingReimbursement.contractCode}</p>
@@ -750,7 +847,7 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
               {/* 进度信息 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">进度信息</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">进度类型</Label>
                     <p className="mt-1">{getProgressTypeLabel(viewingReimbursement.progressType)}</p>
@@ -776,7 +873,7 @@ export default function ProgressReimbursementManagement({ currentUser }: Progres
               {/* 报销信息 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">报销信息</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">报销类型</Label>
                     <p className="mt-1">{getReimbursementTypeLabel(viewingReimbursement.reimbursementType)}</p>

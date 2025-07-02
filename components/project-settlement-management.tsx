@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { ScrollArea } from "./ui/scroll-area"
 import { Alert, AlertDescription } from "./ui/alert"
+import { useIsMobile } from "./ui/use-mobile"
+import { cn } from "@/lib/utils"
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -43,6 +45,7 @@ interface ProjectSettlementManagementProps {
 }
 
 export default function ProjectSettlementManagement({ currentUser }: ProjectSettlementManagementProps) {
+  const isMobile = useIsMobile()
   const [settlements, setSettlements] = useState<ProjectSettlement[]>([])
   const [summary, setSummary] = useState<SettlementSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -223,16 +226,24 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">项目结算管理</h2>
-          <p className="text-gray-600">合同收款汇总看板</p>
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <div>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">项目结算管理</h2>
+            <p className="text-xs sm:text-sm text-gray-600">合同收款汇总看板</p>
+          </div>
         </div>
-        <Button onClick={loadData} className="flex items-center">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          刷新数据
-        </Button>
+        <div className="flex flex-row gap-2 sm:gap-3">
+          <Button 
+            onClick={loadData} 
+            size="sm"
+            className="px-3 py-2 text-sm"
+          >
+            <RefreshCw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            刷新数据
+          </Button>
+        </div>
       </div>
 
       {/* 全局概览卡片 */}

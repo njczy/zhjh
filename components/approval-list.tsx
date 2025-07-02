@@ -16,15 +16,18 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle, XCircle, ChevronLeft, ChevronRight, Eye } from "lucide-react"
+import { CheckCircle, XCircle, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import { getApprovalsAction, approveProjectAction, getProjectByIdAction } from "../app/actions"
 import { type Approval, type Project } from "@/lib/data"
 import { useUser } from "@/contexts/UserContext"
+import { useIsMobile } from "@/components/ui/use-mobile"
 import ProjectDetailView from "./project-detail-view"
 
 export default function ApprovalList() {
   const { currentUser } = useUser()
+  const isMobile = useIsMobile()
   const [approvals, setApprovals] = useState<Approval[]>([])
   const [loading, setLoading] = useState(true)
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false)
@@ -148,17 +151,170 @@ export default function ApprovalList() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <h2 className="text-2xl font-bold text-gray-800">待办列表</h2>
-        <Button onClick={fetchApprovals} variant="outline">
-          刷新
-        </Button>
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4 flex-shrink-0">
+        <div className="flex items-center">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">审批列表</h2>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
+          <Button 
+            onClick={fetchApprovals} 
+            variant="outline"
+            size="sm"
+            className="px-3 py-2 text-sm"
+          >
+            <RefreshCw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            刷新
+          </Button>
+        </div>
       </div>
 
       {loading ? (
         <div className="text-center py-8 text-gray-600 flex-1 flex items-center justify-center">加载中...</div>
+      ) : isMobile ? (
+        // 移动端卡片布局
+        <div className="flex-1 flex flex-col min-h-0">
+          <ScrollArea className="flex-1 w-full">
+            <div className="space-y-3 p-1">
+              {paginatedApprovals.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  暂无审批项目
+                </div>
+              ) : (
+                paginatedApprovals.map((approval) => (
+                  <div key={approval.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    {/* 审批标题行 */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 text-sm leading-tight mb-1">
+                          {approval.projectName}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          提交人: {approval.submitter}
+                        </p>
+                      </div>
+                      <div className="ml-3 flex-shrink-0">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(approval.status)}`}>
+                          {approval.status}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* 审批信息网格 */}
+                    <div className="space-y-2 mb-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">提交时间:</span>
+                        <span className="ml-1 text-gray-900">{new Date(approval.submittedAt).toLocaleString()}</span>
+                      </div>
+                      {approval.approvedAt && (
+                        <div>
+                          <span className="text-gray-500">审批时间:</span>
+                          <span className="ml-1 text-gray-900">{new Date(approval.approvedAt).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {approval.comments && (
+                        <div>
+                          <span className="text-gray-500">审批意见:</span>
+                          <span className="ml-1 text-gray-900">{approval.comments}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 操作按钮 */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewProject(approval)}
+                          disabled={loadingProject}
+                          className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          查看
+                        </Button>
+                      </div>
+                      
+                      {/* 审批操作 */}
+                      {approval.status === "待审批" && (
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApprovalClick(approval, "同意")}
+                            className="h-7 px-2 text-xs text-green-600 hover:text-green-700"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            同意
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApprovalClick(approval, "驳回")}
+                            className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            驳回
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+          
+          {/* 移动端分页控件 */}
+          {approvals.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-200 flex-shrink-0 flex flex-col space-y-2">
+              <div className="flex items-center justify-center space-x-2">
+                <Label htmlFor="items-per-page" className="text-xs">每页显示</Label>
+                <Select
+                  value={String(itemsPerPage)}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value))
+                    setCurrentPage(1)
+                  }}
+                >
+                  <SelectTrigger className="w-[60px] h-8 text-xs">
+                    <SelectValue placeholder="10" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="15">15</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 px-2"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <span className="text-xs text-gray-700">
+                  第 {currentPage} 页 / 共 {totalPages} 页
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-2"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
+        // 桌面端表格布局
         <div className="flex-1 flex flex-col min-h-0">
           <ScrollArea className="flex-1 w-full">
             <Table>

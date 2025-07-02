@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Eye, Edit, CalendarCheck, FileText, ClipboardList, Send, Upload, Download, CalendarIcon, ChevronDown, ChevronRight } from "lucide-react"
+import { Eye, Edit, CalendarCheck, FileText, ClipboardList, Send, Upload, Download, CalendarIcon, ChevronDown, ChevronRight, Menu, X } from "lucide-react"
 import { useIsMobile } from "@/components/ui/use-mobile"
 import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
@@ -250,6 +250,9 @@ export default function MonthlyReviewsEmbedded() {
 
   // 展开状态管理
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set())
+  
+  // 移动端筛选器切换状态
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const fetchAllData = async () => {
     setLoading(true)
@@ -530,10 +533,27 @@ export default function MonthlyReviewsEmbedded() {
         </div>
       </div>
 
-      {/* 筛选区域 */}
+      {/* 移动端筛选器切换按钮 */}
+      {isMobile && (
+        <div className="mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="w-full flex items-center justify-between h-8 text-xs"
+          >
+            <span>筛选条件</span>
+            {showMobileFilters ? <X className="h-3 w-3" /> : <Menu className="h-3 w-3" />}
+          </Button>
+        </div>
+      )}
+
+      {/* 筛选器区域 */}
       <div className={cn(
         "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0",
-        isMobile ? "flex-col" : "flex-row"
+        isMobile ? (
+          showMobileFilters ? "flex-col items-stretch space-y-2" : "hidden"
+        ) : "flex-row"
       )}>
         <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
@@ -559,15 +579,9 @@ export default function MonthlyReviewsEmbedded() {
           />
         </div>
         
-        {!isMobile && (
-          <div className="w-[20px] flex items-center justify-center h-10">
-            <span className="text-gray-500 font-medium">-</span>
-          </div>
-        )}
-        
         <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
-            {isMobile ? "结束日期" : "结束日期"}
+            结束日期
           </Label>
           <EnhancedDatePicker
             date={filterEndDate}
@@ -588,19 +602,19 @@ export default function MonthlyReviewsEmbedded() {
           </Label>
         </div>
         
-        <div className={cn("flex gap-2 sm:gap-3", isMobile ? "w-full" : "ml-auto items-center h-10")}>
+        {/* 重置按钮 */}
+        <div className="flex items-end">
           <Button
             variant="outline"
-            size="sm"
-            className="bg-gray-500 hover:bg-gray-600 text-white border-gray-500 px-3 py-2 text-sm"
             onClick={() => {
               setMeetingCode("")
               setFilterStartDate(undefined)
               setFilterEndDate(undefined)
               setIncludeTax(false)
             }}
+            className="whitespace-nowrap"
           >
-            重置
+            重置筛选
           </Button>
         </div>
       </div>

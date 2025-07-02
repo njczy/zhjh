@@ -10,6 +10,31 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* 隐藏滚动条 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* 移动端适配工具类 */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .mobile-responsive-table {
+    @apply block overflow-x-auto whitespace-nowrap;
+  }
+  
+  @media (max-width: 768px) {
+    .mobile-responsive-table {
+      @apply min-w-full;
+    }
+  }
 }
 
 @layer base {

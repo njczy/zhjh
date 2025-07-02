@@ -14,6 +14,8 @@ import {
   Search,
   Calendar
 } from "lucide-react"
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -48,6 +50,7 @@ interface BiddingDocumentManagementProps {
 }
 
 export default function BiddingDocumentManagement({ currentUser }: BiddingDocumentManagementProps) {
+  const isMobile = useIsMobile()
   const [documents, setDocuments] = useState<BiddingDocument[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -197,23 +200,30 @@ export default function BiddingDocumentManagement({ currentUser }: BiddingDocume
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">招标文件管理</h2>
-        <div className="flex space-x-3">
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      {/* 页面标题和操作按钮 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <div>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">招标文件管理</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">管理招标相关文件的上传和下载</p>
+          </div>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
           {/* 下载模板按钮 */}
           <Button 
             variant="outline" 
             onClick={handleDownloadTemplate}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            size="sm"
+            className="text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700 px-3 py-2 text-sm"
           >
-            <Download className="mr-2 h-4 w-4" />
-            下载招标模板
+            <Download className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">下载招标模板</span>
+            <span className="sm:hidden">模板</span>
           </Button>
           
           {/* 上传文件按钮 */}
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-none">
             <Input
               type="file"
               accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
@@ -223,18 +233,22 @@ export default function BiddingDocumentManagement({ currentUser }: BiddingDocume
             />
             <Button 
               onClick={() => document.getElementById('file-upload')?.click()}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white w-full px-3 py-2 text-sm"
             >
-              <Upload className="mr-2 h-4 w-4" />
-              上传招标文件
+              <Upload className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">上传招标文件</span>
+              <span className="sm:hidden">上传</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* 搜索区域 */}
-      <div className="mb-6 flex gap-4 items-end flex-shrink-0">
-        <div className="w-[300px]">
+      <div className={cn(
+        "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0"
+      )}>
+        <div className={cn(isMobile ? "w-full" : "w-[300px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
             搜索文件
           </Label>
@@ -253,7 +267,106 @@ export default function BiddingDocumentManagement({ currentUser }: BiddingDocume
       {/* 文件列表 */}
       <div className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1 w-full">
-          <Table className="w-full">
+          {isMobile ? (
+            // 移动端卡片布局
+            <div className="space-y-3 p-1">
+              {filteredDocuments.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <div className="flex flex-col items-center space-y-2">
+                    <FileText className="h-12 w-12 text-gray-300" />
+                    <p className="text-lg">暂无招标文件</p>
+                    <p className="text-sm text-gray-400">请点击"上传招标文件"按钮添加文件</p>
+                  </div>
+                </div>
+              ) : (
+                filteredDocuments.map((document) => (
+                  <div key={document.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    {/* 文件标题行 */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          {getFileIcon(document.fileType)}
+                          <h3 className="font-medium text-gray-900 text-sm leading-tight truncate">
+                            {document.fileName}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          上传人: {document.uploader}
+                        </p>
+                      </div>
+                      <div className="ml-3 flex-shrink-0">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          {document.fileType}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* 文件信息网格 */}
+                    <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">文件大小:</span>
+                        <span className="ml-1 text-gray-900">{document.fileSize}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">上传时间:</span>
+                        <span className="ml-1 text-gray-900">{document.uploadTime}</span>
+                      </div>
+                    </div>
+                    
+                    {/* 操作按钮 */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadFile(document)}
+                          className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          下载
+                        </Button>
+                      </div>
+                      
+                      {/* 删除操作 */}
+                      <div className="flex items-center space-x-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              删除
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>确认删除</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                确定要删除文件 "{document.fileName}" 吗？此操作不可撤销。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>取消</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteFile(document.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                删除
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            // 桌面端表格布局
+            <Table className="w-full">
             <TableHeader>
               <TableRow className="h-12">
                 <TableHead className="text-center text-sm font-semibold text-gray-700 px-4 py-3">
@@ -361,6 +474,7 @@ export default function BiddingDocumentManagement({ currentUser }: BiddingDocume
               )}
             </TableBody>
           </Table>
+          )}
         </ScrollArea>
       </div>
 

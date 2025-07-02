@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Eye, ListFilter, CalendarCheck, ChevronLeft, ChevronRight, ClipboardCheck } from "lucide-react" // Declare the Eye variable
+import { Eye, ListFilter, CalendarCheck, ChevronLeft, ChevronRight, ClipboardCheck, Menu, X } from "lucide-react" // Declare the Eye variable
 
 import { useEffect, useState, useMemo, Suspense, useRef } from "react"
 import Link from "next/link"
@@ -39,6 +39,7 @@ import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useIsMobile } from "@/components/ui/use-mobile"
 
 
 import { getProjectsAction, addProjectAction, updateProjectAction, deleteProjectAction, submitProjectForApprovalAction, initializeDataAction } from "../app/actions"
@@ -284,6 +285,8 @@ function ReserveProjectManagementWithParams() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const isMobile = useIsMobile()
   
   // 编辑页面的额外状态
   const [startDate, setStartDate] = useState<Date>()
@@ -501,10 +504,13 @@ function ReserveProjectManagementWithParams() {
 
   const handleEditProject = (project: Project) => {
     setCurrentProject({ ...project })
-    // 只有草稿状态且未提交审批的项目才能编辑，且只有项目创建者可以编辑
-    const canEdit =
-      (project.owner === currentUser.name) &&
-              project.status === "编制" && !project.isSubmittedForApproval
+    // 编辑权限：
+    // 1. 项目创建者可以编辑自己的编制状态项目（无论是否已提交审批）
+    // 2. 中心领导可以编辑本中心专职创建的编制状态项目（无论是否已提交审批）
+    const canEdit = project.status === "编制" && (
+      project.owner === currentUser.name || // 项目创建者
+      (currentUser.role === "中心领导" && project.center === currentUser.center && (project.department === "" || !project.department)) // 中心领导可以编辑本中心项目
+    )
     setIsEditing(canEdit)
     
     // 初始化日期状态
@@ -518,6 +524,8 @@ function ReserveProjectManagementWithParams() {
     setCurrentProject({ ...project })
     setCurrentView("view-project")
   }
+
+
 
   const handleDeleteProject = async (id: string) => {
     // 当前系统中没有角色具有删除权限
@@ -1005,15 +1013,15 @@ function ReserveProjectManagementWithParams() {
       {/* Header */}
       <header className="bg-white border-b shadow-sm">
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between min-h-16 h-auto py-3 px-6">
-          <div className="text-2xl xs:text-3xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-4xl font-semibold text-gray-800 flex-shrink-0 truncate">
+        <div className="flex items-center justify-between min-h-12 sm:min-h-16 h-auto py-2 sm:py-3 px-2 sm:px-4 lg:px-6">
+          <div className="text-base sm:text-lg md:text-2xl lg:text-3xl xl:text-4xl font-semibold text-gray-800 flex-shrink-0 truncate">
             运营管控平台
           </div>
-          <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 flex-shrink-0">
             <Link href="/operation-guide">
-              <Button variant="outline" size="sm" className="text-purple-600 border-purple-600 hover:bg-purple-50 hover:text-purple-700">
-                <BookOpen className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">操作说明</span>
+              <Button variant="outline" size="sm" className="text-purple-600 border-purple-600 hover:bg-purple-50 hover:text-purple-700 p-1 sm:px-3">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden md:inline">操作说明</span>
               </Button>
             </Link>
             <AlertDialog>
@@ -1021,10 +1029,10 @@ function ReserveProjectManagementWithParams() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                  className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700 p-1 sm:px-3"
                 >
-                  <RotateCcw className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">数据初始化</span>
+                  <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden md:inline">数据初始化</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -1047,7 +1055,7 @@ function ReserveProjectManagementWithParams() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <span className="text-sm text-gray-600">
+            <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
               当前用户: {currentUser.name} ({currentUser.role} - {currentUser.center || currentUser.department})
             </span>
             <Select
@@ -1059,7 +1067,7 @@ function ReserveProjectManagementWithParams() {
                 }
               }}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[120px] sm:w-[150px] lg:w-[180px] text-xs sm:text-sm">
                 <SelectValue placeholder="切换用户" />
               </SelectTrigger>
               <SelectContent>
@@ -1076,8 +1084,8 @@ function ReserveProjectManagementWithParams() {
         {/* Navigation Tab Bar */}
         <div className="bg-white border-t">
           {/* Main Tabs */}
-          <div className="flex items-center justify-between px-6 py-2 border-b border-gray-200">
-            <nav className="flex space-x-1">
+          <div className="flex items-center justify-between px-2 sm:px-4 lg:px-6 py-2 border-b border-gray-200">
+            <nav className="flex space-x-0.5 sm:space-x-1 overflow-x-auto scrollbar-hide flex-1 mr-2">
               {Object.keys(tabConfig)
                 .filter(tabKey => {
                   const tabData = tabConfig[tabKey as keyof typeof tabConfig]
@@ -1093,14 +1101,14 @@ function ReserveProjectManagementWithParams() {
                   <button
                     key={tabKey}
                     onClick={() => handleTabChange(tabKey)}
-                    className={`flex items-center px-3 py-1.5 text-sm rounded transition-colors duration-200 ease-in-out ${
+                    className={`flex items-center px-1.5 sm:px-2 lg:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded transition-colors duration-200 ease-in-out whitespace-nowrap flex-shrink-0 ${
                       isActive
                         ? "bg-teal-500 text-white"
                         : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                     }`}
                   >
-                    <IconComponent className="h-3.5 w-3.5 mr-1.5" />
-                    {tabKey}
+                    <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+                    <span className="hidden xs:inline sm:inline">{tabKey}</span>
                   </button>
                 )
               })}
@@ -1118,16 +1126,16 @@ function ReserveProjectManagementWithParams() {
                 // 切换到待办页面时刷新待办数量
                 fetchTodoCount()
               }}
-              className={`relative flex items-center px-3 py-1.5 text-sm rounded transition-colors duration-200 ease-in-out ${
+              className={`relative flex items-center px-1.5 sm:px-2 lg:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded transition-colors duration-200 ease-in-out flex-shrink-0 ${
                 currentView === "todo" 
                   ? "bg-teal-500 text-white" 
                   : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
-              <svg className="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              <span>待办</span>
+              <span className="hidden xs:inline sm:inline">待办</span>
               
               {/* 待办数量显示 */}
               {todoCount > 0 && (
@@ -1146,8 +1154,8 @@ function ReserveProjectManagementWithParams() {
           
           {/* Sub Tabs */}
           {tabConfig[activeTab as keyof typeof tabConfig]?.subTabs.length > 0 && (
-            <div className="flex items-center px-6 py-2 bg-gray-50">
-              <nav className="flex space-x-1">
+            <div className="flex items-center px-2 sm:px-4 lg:px-6 py-1.5 sm:py-2 bg-gray-50 overflow-x-auto scrollbar-hide">
+              <nav className="flex space-x-0.5 sm:space-x-1 whitespace-nowrap">
                 {tabConfig[activeTab as keyof typeof tabConfig].subTabs.map((subTab) => {
                   const SubIconComponent = subTab.icon
                   const isActive = activeSubTab === subTab.key
@@ -1156,14 +1164,14 @@ function ReserveProjectManagementWithParams() {
                     <button
                       key={subTab.key}
                       onClick={() => handleSubTabChange(subTab.key)}
-                      className={`flex items-center px-2.5 py-1 rounded text-xs transition-colors duration-200 ease-in-out ${
+                      className={`flex items-center px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded text-xs transition-colors duration-200 ease-in-out flex-shrink-0 ${
                         isActive
                           ? "bg-teal-500 text-white"
                           : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
                       }`}
                     >
-                      <SubIconComponent className="h-3 w-3 mr-1" />
-                      {subTab.label}
+                      <SubIconComponent className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                      <span className="text-xs">{subTab.label}</span>
                     </button>
                   )
                 })}
@@ -1174,25 +1182,31 @@ function ReserveProjectManagementWithParams() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 bg-gray-100 overflow-auto">
+      <main className="flex-1 p-4 sm:p-6 bg-gray-100 overflow-auto">
         {currentView === "add-project" ? (
           <AddProjectReserve onBack={handleBackToProjects} currentUser={currentUser} />
         ) : currentView === "view-project" && currentProject ? (
           <ProjectDetailView onBack={handleBackToProjects} project={currentProject} />
         ) : currentView === "projects" && activeTab === "储备及综合计划" && activeSubTab === "评审" ? (
-          <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                                 <h2 className="text-2xl font-bold text-gray-800">储备项目列表</h2>
+          <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+              <div className="flex items-center">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">储备项目列表</h2>
               </div>
-              <div className="flex space-x-3">
+              <div className="flex flex-row gap-2 sm:gap-3">
                 {(currentUser.role === "中心专职" || currentUser.role === "部门专职") && (
-                  <Button onClick={handleAddProject} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    <Plus className="mr-2 h-4 w-4" /> 新增项目
+                  <Button 
+                    onClick={handleAddProject} 
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex-1 sm:flex-none px-3 py-2 text-sm"
+                  >
+                    <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> 
+                    <span className="hidden xs:inline sm:inline">新增项目</span>
+                    <span className="xs:hidden sm:hidden">新增</span>
                   </Button>
                 )}
                 {(currentUser.role === "中心专职" || currentUser.role === "部门专职") && (
-                  <div className="relative">
+                  <div className="relative flex-1 sm:flex-none">
                     <Input
                       type="file"
                       accept=".xlsx, .xls"
@@ -1201,10 +1215,13 @@ function ReserveProjectManagementWithParams() {
                       id="file-upload"
                     />
                     <Button 
-                      className="bg-green-600 text-white hover:bg-green-700"
+                      size="sm"
+                      className="bg-green-600 text-white hover:bg-green-700 w-full px-3 py-2 text-sm"
                       onClick={() => document.getElementById('file-upload')?.click()}
                     >
-                      <FileUp className="mr-2 h-4 w-4" /> 批量导入
+                      <FileUp className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> 
+                      <span className="hidden xs:inline sm:inline">批量导入</span>
+                      <span className="xs:hidden sm:hidden">导入</span>
                     </Button>
                   </div>
                 )}
@@ -1212,26 +1229,50 @@ function ReserveProjectManagementWithParams() {
             </div>
 
             {/* Search and Filter Section */}
-            <div className="mb-6 flex gap-4 items-end flex-shrink-0">
-              <div className="w-[300px]">
-                <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-1">
+            {/* 移动端筛选器切换按钮 */}
+            {isMobile && (
+              <div className="mb-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  className="w-full flex items-center justify-between h-10 text-sm font-medium"
+                >
+                  <span className="flex items-center">
+                    <ListFilter className="h-4 w-4 mr-2" />
+                    筛选条件
+                  </span>
+                  {showMobileFilters ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </Button>
+              </div>
+            )}
+
+            {/* 筛选器区域 */}
+            <div className={cn(
+              "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0",
+              isMobile ? (
+                showMobileFilters ? "flex-col items-stretch space-y-3 p-3 bg-gray-50 rounded-lg" : "hidden"
+              ) : "flex-row"
+            )}>
+              <div className={cn(isMobile ? "w-full" : "w-[300px]")}>
+                <Label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-2">
                   搜索项目
                 </Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 z-10" />
                   <Input
                     id="search-input"
-                    placeholder="搜索项目"
+                    placeholder="搜索项目名称或编码"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 h-10"
                   />
                 </div>
               </div>
 
               {(currentUser.role === "部门专职" || currentUser.role === "部门领导") && (
-                <div className="w-[150px]">
-                  <Label htmlFor="filter-affiliation" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
+                  <Label htmlFor="filter-affiliation" className="block text-sm font-medium text-gray-700 mb-2">
                     项目所属
                   </Label>
                   <Select
@@ -1239,7 +1280,7 @@ function ReserveProjectManagementWithParams() {
                     onValueChange={(value) => setFilterAffiliation(value as string | "所有")}
                     name="filter-affiliation"
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1253,8 +1294,8 @@ function ReserveProjectManagementWithParams() {
                 </div>
               )}
 
-              <div className="w-[130px]">
-                <Label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-1">
+              <div className={cn(isMobile ? "w-full" : "w-[130px]")}>
+                <Label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-2">
                   项目状态
                 </Label>
                 <Select
@@ -1262,7 +1303,7 @@ function ReserveProjectManagementWithParams() {
                   onValueChange={(value) => setFilterStatus(value as ProjectStatus | "所有")}
                   name="filter-status"
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1276,12 +1317,12 @@ function ReserveProjectManagementWithParams() {
               </div>
 
               {(currentUser.role === "中心领导" || currentUser.role === "部门专职" || currentUser.role === "部门领导") && (
-                <div className="w-[140px]">
-                  <Label htmlFor="filter-owner" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className={cn(isMobile ? "w-full" : "w-[140px]")}>
+                  <Label htmlFor="filter-owner" className="block text-sm font-medium text-gray-700 mb-2">
                     项目负责人
                   </Label>
                   <Select value={filterOwner} onValueChange={(value) => setFilterOwner(value as string | "所有")} name="filter-owner">
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1296,30 +1337,32 @@ function ReserveProjectManagementWithParams() {
               )}
               
               {/* 时间查询条件 */}
-              <div className="w-[150px]">
-                <Label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
                   开始日期
                 </Label>
                 <EnhancedDatePicker
                   date={filterStartDate}
                   onDateChange={setFilterStartDate}
-                  placeholder="开始日期"
+                  placeholder="选择开始日期"
                 />
               </div>
 
-              <div className="w-[150px]">
-                <Label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className={cn(isMobile ? "w-full" : "w-[150px]")}>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
                   结束日期
                 </Label>
                 <EnhancedDatePicker
                   date={filterEndDate}
                   onDateChange={setFilterEndDate}
-                  placeholder="结束日期"
+                  placeholder="选择结束日期"
                 />
               </div>
 
               {/* Reset Filters Button */}
-              <div className="flex items-end">
+              <div className={cn(
+                isMobile ? "w-full" : "flex items-end"
+              )}>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1331,8 +1374,12 @@ function ReserveProjectManagementWithParams() {
                     setFilterEndDate(undefined)
                     setCurrentPage(1)
                   }}
-                  className="whitespace-nowrap"
+                  className={cn(
+                    "whitespace-nowrap",
+                    isMobile ? "w-full h-10" : ""
+                  )}
                 >
+                  <RotateCcw className="h-4 w-4 mr-2" />
                   重置筛选
                 </Button>
               </div>
@@ -1340,7 +1387,206 @@ function ReserveProjectManagementWithParams() {
 
             {loading ? (
               <div className="text-center py-8 text-gray-600 flex-1 flex items-center justify-center">加载中...</div>
+            ) : isMobile ? (
+              // 移动端卡片布局
+              <div className="flex-1 flex flex-col min-h-0">
+                <ScrollArea className="flex-1 w-full">
+                  <div className="space-y-4 p-2">
+                    {paginatedProjects.length === 0 ? (
+                      <div className="text-center text-gray-500 py-8">
+                        无匹配项目。
+                      </div>
+                    ) : (
+                      paginatedProjects.map((project) => (
+                        <div key={project.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                          {/* 项目标题行 */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1 min-w-0 pr-3">
+                              <h3 className="font-medium text-gray-900 text-base leading-5 mb-2 break-words">
+                                {project.name}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                编码: {project.id}
+                              </p>
+                            </div>
+                            <div className="flex-shrink-0">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                project.status === "编制" ? "bg-blue-100 text-blue-800" :
+                                project.status === "评审" ? "bg-yellow-100 text-yellow-800" :
+                                project.status === "批复" ? "bg-green-100 text-green-800" :
+                                "bg-purple-100 text-purple-800"
+                              }`}>
+                                {project.status}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* 项目信息网格 - 优化布局 */}
+                          <div className="space-y-3 mb-4">
+                            <div className="grid grid-cols-1 gap-3">
+                              <div className="flex flex-col space-y-1">
+                                <span className="text-xs text-gray-500 font-medium">项目类型</span>
+                                <span className="text-sm text-gray-900 break-words">{project.projectType || "未设置"}</span>
+                              </div>
+                              <div className="flex flex-col space-y-1">
+                                <span className="text-xs text-gray-500 font-medium">项目负责人</span>
+                                <span className="text-sm text-gray-900">{project.owner}</span>
+                              </div>
+                              <div className="flex flex-col space-y-1">
+                                <span className="text-xs text-gray-500 font-medium">归口管理部门</span>
+                                <span className="text-sm text-gray-900 break-words">{project.managementDepartment || "未设置"}</span>
+                              </div>
+                              <div className="flex flex-col space-y-1">
+                                <span className="text-xs text-gray-500 font-medium">储备项目版本</span>
+                                <span className="text-sm text-gray-900">{project.version}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* 时间信息 */}
+                          {project.startDate && project.endDate && (
+                            <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                              <div className="flex flex-col space-y-1">
+                                <span className="text-xs text-gray-500 font-medium">项目时间</span>
+                                <span className="text-sm text-gray-900 leading-relaxed">
+                                  {format(new Date(project.startDate), "yyyy-MM-dd", { locale: zhCN })} 
+                                  <br />
+                                  至 {format(new Date(project.endDate), "yyyy-MM-dd", { locale: zhCN })}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* 操作按钮 */}
+                          <div className="flex flex-col space-y-3 pt-3 border-t border-gray-100">
+                                                        <div className="flex items-center justify-between">
+                              {/* 根据项目状态和用户权限显示不同按钮 */}
+                              {(() => {
+                                // 判断用户是否有操作权限
+                                const hasOperationPermission = project.owner === currentUser.name || 
+                                  (currentUser.role === "中心领导" && project.center === currentUser.center && (project.department === "" || !project.department))
+                                
+                                if (project.status === "编制" && hasOperationPermission) {
+                                  if (!project.isSubmittedForApproval) {
+                                    // 编制状态且未提交审核：显示编辑和提交审核按钮
+                                    return (
+                                      <div className="flex items-center space-x-2 flex-1">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleEditProject(project)}
+                                          className="h-8 px-3 text-xs flex-1"
+                                        >
+                                          <Edit className="h-3 w-3 mr-1" />
+                                          编辑
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSubmitForApproval(project)}
+                                          className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 flex-1"
+                                        >
+                                          提交审核
+                                        </Button>
+                                      </div>
+                                    )
+                                  } else {
+                                    // 编制状态但已提交审核：只显示编辑按钮
+                                    return (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleEditProject(project)}
+                                        className="h-8 px-3 text-xs flex-1"
+                                      >
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        编辑
+                                      </Button>
+                                    )
+                                  }
+                                } else {
+                                  // 其他情况：只显示查看按钮
+                                  return (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleViewProject(project)}
+                                      className="h-8 px-3 text-xs flex-1"
+                                    >
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      查看详情
+                                    </Button>
+                                  )
+                                }
+                              })()}
+                            </div>
+                            
+                            {/* 审批状态显示 */}
+                            {project.isSubmittedForApproval && (
+                              <div className="flex justify-center">
+                                <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full font-medium">
+                                  审批中
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+                
+                {/* 移动端分页控件 - 优化布局 */}
+                <div className="mt-3 pt-3 border-t border-gray-200 flex-shrink-0 bg-white">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-center justify-center space-x-3">
+                      <Label htmlFor="items-per-page" className="text-sm font-medium text-gray-700">每页显示</Label>
+                      <Select
+                        value={String(itemsPerPage)}
+                        onValueChange={(value) => {
+                          setItemsPerPage(Number(value))
+                          setCurrentPage(1)
+                        }}
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="w-[70px] h-9 text-sm">
+                          <SelectValue placeholder="10" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="15">15</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center justify-center space-x-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1 || loading}
+                        className="h-9 px-3"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-gray-700 font-medium min-w-[120px] text-center">
+                        第 {currentPage} 页 / 共 {totalPages} 页
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages || loading}
+                        className="h-9 px-3"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
+              // 桌面端表格布局
               <div className="flex-1 flex flex-col min-h-0">
                 <ScrollArea className="flex-1 w-full">
                   <div className="min-w-[1200px] w-full">
@@ -1386,26 +1632,26 @@ function ReserveProjectManagementWithParams() {
                       ) : (
                         paginatedProjects.map((project) => (
                           <TableRow key={project.id} className="h-12 hover:bg-gray-50">
-                            <TableCell className="text-sm text-gray-600 px-2 py-3 whitespace-nowrap text-center">
+                            <TableCell className="text-sm text-gray-600 px-2 py-3 whitespace-nowrap text-center" data-label="储备项目编码">
                               {project.id}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600 px-2 py-3 text-center">
+                            <TableCell className="text-sm text-gray-600 px-2 py-3 text-center" data-label="储备项目名称">
                               <div className="truncate max-w-[180px] mx-auto" title={project.name}>
                                 {project.name}
                               </div>
                             </TableCell>
-                            <TableCell className="text-center px-2 py-3">
+                            <TableCell className="text-center px-2 py-3" data-label="项目类型">
                               <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
                                 {project.projectType || "未设置"}
                               </span>
                             </TableCell>
-                            <TableCell className="text-center text-sm text-gray-700 px-2 py-3 whitespace-nowrap">
+                            <TableCell className="text-center text-sm text-gray-700 px-2 py-3 whitespace-nowrap" data-label="项目负责人">
                               {project.owner}
                             </TableCell>
-                            <TableCell className="text-center text-sm text-gray-700 px-2 py-3 whitespace-nowrap">
+                            <TableCell className="text-center text-sm text-gray-700 px-2 py-3 whitespace-nowrap" data-label="归口管理部门">
                               {getProjectAffiliationDisplay(project)}
                             </TableCell>
-                            <TableCell className="text-center px-2 py-3">
+                            <TableCell className="text-center px-2 py-3" data-label="储备项目状态">
                               <span
                                 className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
                                   project.status === "编制"
@@ -1420,10 +1666,10 @@ function ReserveProjectManagementWithParams() {
                                 {project.status}
                               </span>
                             </TableCell>
-                            <TableCell className="text-center text-sm text-gray-600 px-2 py-3 whitespace-nowrap">
+                            <TableCell className="text-center text-sm text-gray-600 px-2 py-3 whitespace-nowrap" data-label="储备项目版本">
                               {project.version || 'V1'}
                             </TableCell>
-                            <TableCell className="text-center text-sm text-gray-600 px-2 py-3 whitespace-nowrap">
+                            <TableCell className="text-center text-sm text-gray-600 px-2 py-3 whitespace-nowrap" data-label="项目时间">
                               <div className="text-xs">
                                 {project.startDate && project.endDate ? (
                                   `${project.startDate} 至 ${project.endDate}`
@@ -1436,33 +1682,68 @@ function ReserveProjectManagementWithParams() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-center px-2 py-3">
-                              <div className="flex flex-wrap gap-1 justify-center">
-                                {/* 根据项目状态和提交状态显示不同按钮 */}
-                                {project.status === "编制" && !project.isSubmittedForApproval && 
-                                 ((currentUser.role === "中心专职" || currentUser.role === "部门专职") && project.owner === currentUser.name) ? (
-                                  // 暂存状态：显示编辑和提交审批按钮
-                                  <>
-                                    <Button variant="outline" size="sm" onClick={() => handleEditProject(project)} className="h-7 px-2 text-xs">
-                                      <Edit className="h-3 w-3 mr-1" /> 编辑
-                                    </Button>
-                                    <Button variant="default" size="sm" onClick={() => handleSubmitForApproval(project)} className="h-7 px-2 text-xs">
-                                      提交审批
-                                    </Button>
-                                  </>
-                                ) : (
-                                  // 已提交或无权限：显示查看按钮
-                                  <Button variant="outline" size="sm" onClick={() => handleViewProject(project)} className="h-7 px-2 text-xs">
-                                    <Eye className="h-3 w-3 mr-1" /> 查看
-                                  </Button>
-                                )}
-
-                                {/* 显示审批状态 */}
-                                {project.isSubmittedForApproval && (
-                                  <span className="text-xs text-orange-600 font-medium px-2 py-1 bg-orange-50 rounded-md">
-                                    审批中
-                                  </span>
-                                )}
+                            <TableCell className="text-center px-2 py-3" data-label="操作">
+                                                            <div className="flex flex-wrap gap-1 justify-center">
+                                {/* 根据项目状态和用户权限显示不同按钮 */}
+                                {(() => {
+                                  // 判断用户是否有操作权限
+                                  const hasOperationPermission = project.owner === currentUser.name || 
+                                    (currentUser.role === "中心领导" && project.center === currentUser.center && (project.department === "" || !project.department))
+                                  
+                                  if (project.status === "编制" && hasOperationPermission) {
+                                    if (!project.isSubmittedForApproval) {
+                                      // 编制状态且未提交审核：显示编辑和提交审核按钮
+                                      return (
+                                        <>
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => handleEditProject(project)} 
+                                            className="h-7 px-2 text-xs"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" /> 编辑
+                                          </Button>
+                                          <Button 
+                                            size="sm" 
+                                            onClick={() => handleSubmitForApproval(project)} 
+                                            className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700"
+                                          >
+                                            提交审核
+                                          </Button>
+                                        </>
+                                      )
+                                    } else {
+                                      // 编制状态但已提交审核：显示编辑按钮和审批状态
+                                      return (
+                                        <>
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => handleEditProject(project)} 
+                                            className="h-7 px-2 text-xs"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" /> 编辑
+                                          </Button>
+                                          <span className="text-xs text-orange-600 font-medium px-2 py-1 bg-orange-50 rounded-md">
+                                            审批中
+                                          </span>
+                                        </>
+                                      )
+                                    }
+                                  } else {
+                                    // 其他情况：只显示查看按钮
+                                    return (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => handleViewProject(project)} 
+                                        className="h-7 px-2 text-xs"
+                                      >
+                                        <Eye className="h-3 w-3 mr-1" /> 查看
+                                      </Button>
+                                    )
+                                  }
+                                })()}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1474,9 +1755,15 @@ function ReserveProjectManagementWithParams() {
                 </ScrollArea>
                 
                 {/* 分页控件 - 移到表格容器内部 */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="items-per-page">每页显示</Label>
+                <div className={cn(
+                "mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-gray-200 flex-shrink-0",
+                isMobile ? "flex flex-col space-y-2" : "flex items-center justify-between"
+              )}>
+                  <div className={cn(
+                    "flex items-center space-x-1 sm:space-x-2",
+                    isMobile && "justify-center"
+                  )}>
+                    <Label htmlFor="items-per-page" className="text-xs sm:text-sm">每页显示</Label>
                     <Select
                       value={String(itemsPerPage)}
                       onValueChange={(value) => {
@@ -1485,7 +1772,7 @@ function ReserveProjectManagementWithParams() {
                       }}
                       disabled={loading}
                     >
-                      <SelectTrigger className="w-[80px]">
+                      <SelectTrigger className="w-[60px] sm:w-[80px] h-8 text-xs sm:text-sm">
                         <SelectValue placeholder="10" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1496,17 +1783,21 @@ function ReserveProjectManagementWithParams() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className={cn(
+                    "flex items-center space-x-1 sm:space-x-2",
+                    isMobile && "justify-center"
+                  )}>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                       disabled={currentPage === 1 || loading}
+                      className="h-8 px-2 sm:px-3"
                     >
-                      <ChevronLeft className="h-4 w-4" />
-                      上一页
+                      <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                      {isMobile ? "" : "上一页"}
                     </Button>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-xs sm:text-sm text-gray-700">
                       第 {currentPage} 页 / 共 {totalPages} 页
                     </span>
                     <Button
@@ -1514,9 +1805,10 @@ function ReserveProjectManagementWithParams() {
                       size="sm"
                       onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages || loading}
+                      className="h-8 px-2 sm:px-3"
                     >
-                      下一页
-                      <ChevronRight className="h-4 w-4" />
+                      {isMobile ? "" : "下一页"}
+                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
@@ -1524,13 +1816,22 @@ function ReserveProjectManagementWithParams() {
             )}
           </div>
         ) : currentView === "edit-project" && currentProject ? (
-          <div className="w-[95%] mx-auto p-6 space-y-6">
+          <div className={cn(
+            "mx-auto space-y-6",
+            isMobile ? "w-full p-4" : "w-[95%] p-6"
+          )}>
             {/* 页面标题 */}
-            <div className="flex items-center space-x-4 mb-6">
+            <div className={cn(
+              "flex items-center mb-6",
+              isMobile ? "space-x-2" : "space-x-4"
+            )}>
               <Button variant="ghost" onClick={handleBackToProjects} className="p-2">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className={cn(
+                "font-bold text-gray-900 truncate",
+                isMobile ? "text-lg" : "text-2xl"
+              )}>
                 {isEditing ? '编辑项目' : '查看项目'} - {currentProject.name}
               </h1>
             </div>
@@ -1550,7 +1851,10 @@ function ReserveProjectManagementWithParams() {
                 <CardTitle>基本信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className={cn(
+                  "grid gap-6",
+                  isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                )}>
                   {/* 责任部门（只读） */}
                   <div className="space-y-2">
                     <Label>责任部门</Label>
@@ -1684,8 +1988,11 @@ function ReserveProjectManagementWithParams() {
                   </div>
                 </div>
 
-                {/* 必要性、可行性、立项依据 - 一行展示 */}
-                <div className="grid grid-cols-3 gap-6">
+                {/* 必要性、可行性、立项依据 - 响应式布局 */}
+                <div className={cn(
+                  "grid gap-6",
+                  isMobile ? "grid-cols-1" : "grid-cols-3"
+                )}>
                   {/* 必要性（必填） */}
                   <div className="space-y-2">
                     <Label>必要性 <span className="text-red-500">*</span></Label>
@@ -1750,84 +2057,169 @@ function ReserveProjectManagementWithParams() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>开始时间</TableHead>
-                        <TableHead>结束时间</TableHead>
-                        <TableHead>计划收入（含税元）</TableHead>
-                        <TableHead>收入税率（%）</TableHead>
-                        <TableHead>计划支出（含税元）</TableHead>
-                        <TableHead>支出税率（%）</TableHead>
-                        <TableHead>毛利率（%）</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(!currentProject.financialRows || currentProject.financialRows.length === 0) ? (
+                {isMobile ? (
+                  // 移动端卡片式布局
+                  <div className="space-y-4">
+                    {(!currentProject.financialRows || currentProject.financialRows.length === 0) ? (
+                      <div className="text-center text-gray-500 py-8">
+                        暂无财务数据
+                      </div>
+                    ) : (
+                      currentProject.financialRows.map((row, index) => (
+                        <Card key={index} className="border border-gray-200">
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-sm">时间段 {index + 1}</span>
+                              <span className="text-xs text-gray-500">
+                                {row.startTime} - {row.endTime}
+                              </span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">计划收入（含税元）</Label>
+                                <Input
+                                  type="number"
+                                  value={row.plannedIncome || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'plannedIncome', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("text-sm", !isEditing && "bg-gray-50")}
+                                  placeholder="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">收入税率（%）</Label>
+                                <Input
+                                  type="number"
+                                  value={row.incomeTaxRate || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'incomeTaxRate', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("text-sm", !isEditing && "bg-gray-50")}
+                                  placeholder="13"
+                                  max="100"
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">计划支出（含税元）</Label>
+                                <Input
+                                  type="number"
+                                  value={row.plannedExpense || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'plannedExpense', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("text-sm", !isEditing && "bg-gray-50")}
+                                  placeholder="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">支出税率（%）</Label>
+                                <Input
+                                  type="number"
+                                  value={row.expenseTaxRate || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'expenseTaxRate', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("text-sm", !isEditing && "bg-gray-50")}
+                                  placeholder="13"
+                                  max="100"
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="pt-2 border-t border-gray-100">
+                              <div className="flex justify-between items-center">
+                                <Label className="text-xs">毛利率</Label>
+                                <span className="font-medium text-sm">
+                                  {row.grossMargin?.toFixed(2) || '0.00'}%
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  // 桌面端表格布局
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                            暂无数据
-                          </TableCell>
+                          <TableHead>开始时间</TableHead>
+                          <TableHead>结束时间</TableHead>
+                          <TableHead>计划收入（含税元）</TableHead>
+                          <TableHead>收入税率（%）</TableHead>
+                          <TableHead>计划支出（含税元）</TableHead>
+                          <TableHead>支出税率（%）</TableHead>
+                          <TableHead>毛利率（%）</TableHead>
                         </TableRow>
-                      ) : (
-                        currentProject.financialRows.map((row, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{row.startTime}</TableCell>
-                            <TableCell>{row.endTime}</TableCell>
-                                                         <TableCell>
-                               <Input
-                                 type="number"
-                                 value={row.plannedIncome || ''}
-                                 onChange={(e) => updateFinancialRow(index, 'plannedIncome', Number(e.target.value) || 0)}
-                                 disabled={!isEditing}
-                                 className={cn("w-36", !isEditing && "bg-gray-50")}
-                                 placeholder="0"
-                               />
-                             </TableCell>
-                             <TableCell>
-                               <Input
-                                 type="number"
-                                 value={row.incomeTaxRate || ''}
-                                 onChange={(e) => updateFinancialRow(index, 'incomeTaxRate', Number(e.target.value) || 0)}
-                                 disabled={!isEditing}
-                                 className={cn("w-24", !isEditing && "bg-gray-50")}
-                                 placeholder="13"
-                                 max="100"
-                                 min="0"
-                               />
-                             </TableCell>
-                             <TableCell>
-                               <Input
-                                 type="number"
-                                 value={row.plannedExpense || ''}
-                                 onChange={(e) => updateFinancialRow(index, 'plannedExpense', Number(e.target.value) || 0)}
-                                 disabled={!isEditing}
-                                 className={cn("w-36", !isEditing && "bg-gray-50")}
-                                 placeholder="0"
-                               />
-                             </TableCell>
-                             <TableCell>
-                               <Input
-                                 type="number"
-                                 value={row.expenseTaxRate || ''}
-                                 onChange={(e) => updateFinancialRow(index, 'expenseTaxRate', Number(e.target.value) || 0)}
-                                 disabled={!isEditing}
-                                 className={cn("w-24", !isEditing && "bg-gray-50")}
-                                 placeholder="13"
-                                 max="100"
-                                 min="0"
-                               />
-                             </TableCell>
-                            <TableCell className="font-medium">
-                              {row.grossMargin?.toFixed(2) || '0.00'}%
+                      </TableHeader>
+                      <TableBody>
+                        {(!currentProject.financialRows || currentProject.financialRows.length === 0) ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                              暂无数据
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        ) : (
+                          currentProject.financialRows.map((row, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{row.startTime}</TableCell>
+                              <TableCell>{row.endTime}</TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={row.plannedIncome || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'plannedIncome', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("w-36", !isEditing && "bg-gray-50")}
+                                  placeholder="0"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={row.incomeTaxRate || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'incomeTaxRate', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("w-24", !isEditing && "bg-gray-50")}
+                                  placeholder="13"
+                                  max="100"
+                                  min="0"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={row.plannedExpense || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'plannedExpense', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("w-36", !isEditing && "bg-gray-50")}
+                                  placeholder="0"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={row.expenseTaxRate || ''}
+                                  onChange={(e) => updateFinancialRow(index, 'expenseTaxRate', Number(e.target.value) || 0)}
+                                  disabled={!isEditing}
+                                  className={cn("w-24", !isEditing && "bg-gray-50")}
+                                  placeholder="13"
+                                  max="100"
+                                  min="0"
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {row.grossMargin?.toFixed(2) || '0.00'}%
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1837,7 +2229,10 @@ function ReserveProjectManagementWithParams() {
                 <CardTitle>项目财务摘要</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                <div className={cn(
+                  "grid gap-6",
+                  isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+                )}>
                   <div className="space-y-2">
                     <Label>项目总收入（含税）</Label>
                     <Input 
@@ -1906,7 +2301,10 @@ function ReserveProjectManagementWithParams() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>可研项目建议书</Label>
-                    <div className="flex items-center space-x-2">
+                    <div className={cn(
+                      "flex items-center space-x-2",
+                      isMobile && "flex-col space-x-0 space-y-2 items-stretch"
+                    )}>
                       {isEditing ? (
                         <>
                           <Input
@@ -1919,13 +2317,19 @@ function ReserveProjectManagementWithParams() {
                             type="button"
                             variant="outline"
                             onClick={() => document.getElementById('file-upload-edit')?.click()}
-                            className="flex items-center space-x-2"
+                            className={cn(
+                              "flex items-center space-x-2",
+                              isMobile && "w-full justify-center"
+                            )}
                           >
                             <Upload className="h-4 w-4" />
                             <span>选择文件</span>
                           </Button>
                           {currentProject.attachmentFileName && (
-                            <span className="text-sm text-gray-600">
+                            <span className={cn(
+                              "text-sm text-gray-600",
+                              isMobile && "text-center"
+                            )}>
                               当前文件: {currentProject.attachmentFileName}
                             </span>
                           )}
@@ -1952,7 +2356,9 @@ function ReserveProjectManagementWithParams() {
                         value={currentProject.departmentHead || ''} 
                         onValueChange={(value) => setCurrentProject(prev => prev ? { ...prev, departmentHead: value } : null)}
                       >
-                        <SelectTrigger className="w-[12rem]">
+                        <SelectTrigger className={cn(
+                          isMobile ? "w-full" : "w-[12rem]"
+                        )}>
                           <SelectValue placeholder="请选择负责人" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1965,7 +2371,10 @@ function ReserveProjectManagementWithParams() {
                       <Input
                         value={currentProject.departmentHead || ''}
                         disabled
-                        className="bg-gray-50 w-[12rem]"
+                        className={cn(
+                          "bg-gray-50",
+                          isMobile ? "w-full" : "w-[12rem]"
+                        )}
                         placeholder="无负责人"
                       />
                     )}
@@ -1975,8 +2384,15 @@ function ReserveProjectManagementWithParams() {
             </Card>
 
             {/* 底部操作按钮 */}
-            <div className="flex justify-end space-x-4 pt-6">
-              <Button variant="outline" onClick={handleBackToProjects}>
+            <div className={cn(
+              "flex pt-6",
+              isMobile ? "flex-col space-y-3" : "justify-end space-x-4"
+            )}>
+              <Button 
+                variant="outline" 
+                onClick={handleBackToProjects}
+                className={isMobile ? "w-full" : ""}
+              >
                 取消
               </Button>
               {isEditing && (
@@ -1988,12 +2404,16 @@ function ReserveProjectManagementWithParams() {
                         await handleSaveProjectEdit(currentProject)
                       }
                     }}
+                    className={isMobile ? "w-full" : ""}
                   >
-                                         暂存
+                    暂存
                   </Button>
                   <Button 
                     onClick={handleEditSubmit}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className={cn(
+                      "bg-blue-600 hover:bg-blue-700",
+                      isMobile && "w-full"
+                    )}
                   >
                     提交
                   </Button>
@@ -2001,6 +2421,7 @@ function ReserveProjectManagementWithParams() {
               )}
             </div>
           </div>
+
         ) : currentView === "todo" ? (
           <TodoList onTodoProcessed={fetchTodoCount} />
         ) : activeTab === "储备及综合计划" && activeSubTab === "批复" ? (
@@ -2184,7 +2605,9 @@ function ReserveProjectManagementWithParams() {
 
       {/* 提交审批确认模态框 */}
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className={cn(
+          isMobile ? "max-w-[95vw] w-full" : "sm:max-w-[500px]"
+        )}>
           <DialogHeader>
             <DialogTitle>提交审批</DialogTitle>
             <DialogDescription>
@@ -2193,8 +2616,14 @@ function ReserveProjectManagementWithParams() {
           </DialogHeader>
           {selectedProjectForApproval && (
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approver" className="text-right">
+              <div className={cn(
+                "items-center gap-4",
+                isMobile ? "flex flex-row" : "grid grid-cols-4"
+              )}>
+                <Label htmlFor="approver" className={cn(
+                  "whitespace-nowrap",
+                  isMobile ? "text-left flex-shrink-0" : "text-right"
+                )}>
                   选择审批人
                 </Label>
                 <Select
@@ -2202,7 +2631,9 @@ function ReserveProjectManagementWithParams() {
                   onValueChange={setSelectedApprover}
                   name="approver"
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className={cn(
+                    isMobile ? "flex-1" : "col-span-3"
+                  )}>
                     <SelectValue placeholder="请选择审批人" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2225,11 +2656,23 @@ function ReserveProjectManagementWithParams() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsApprovalModalOpen(false)}>
+          <DialogFooter className={cn(
+            isMobile ? "flex-col space-y-2" : "flex-row space-x-2"
+          )}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsApprovalModalOpen(false)}
+              className={isMobile ? "w-full" : ""}
+            >
               取消
             </Button>
-            <Button type="button" onClick={handleApprovalSubmit} disabled={!selectedApprover}>
+            <Button 
+              type="button" 
+              onClick={handleApprovalSubmit} 
+              disabled={!selectedApprover}
+              className={isMobile ? "w-full" : ""}
+            >
               确认提交
             </Button>
           </DialogFooter>

@@ -11,6 +11,8 @@ import { CheckCircle, XCircle, Clock, FileText, AlertTriangle, TrendingUp, Calen
 import { useUser } from "@/contexts/UserContext"
 import { getTodoItemsAction, processTodoItemAction, getApprovalReportByIdAction, getApprovalByIdAction, getProjectByIdAction } from "@/app/actions"
 import type { TodoItem, ApprovalReport, Approval, Project } from "@/lib/data"
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 
 interface TodoListProps {
   onTodoProcessed?: () => void
@@ -19,6 +21,7 @@ interface TodoListProps {
 export default function TodoList({ onTodoProcessed }: TodoListProps) {
   const router = useRouter()
   const { currentUser } = useUser()
+  const isMobile = useIsMobile()
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null)
@@ -32,9 +35,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
     try {
       setLoading(true)
       const items = await getTodoItemsAction(currentUser.id)
-      // 过滤掉月度审核参与人确认的待办事项，只显示批复报告相关的待办
+      // 过滤掉月度审核参与人确认的待办事项，只显示待处理状态的待办
       const filteredItems = items.filter(item => 
-        item.type !== "monthly_review_participant_confirm"
+        item.type !== "monthly_review_participant_confirm" && 
+        item.status === "待处理"
       )
       setTodoItems(filteredItems)
     } catch (error) {
@@ -172,15 +176,20 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">我的待办</h2>
-        <Badge variant="secondary">{todoItems.length} 项待办</Badge>
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">我的待办</h2>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
+          <Badge variant="secondary" className="px-3 py-1 text-sm">{todoItems.length} 项待办</Badge>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {todoItems.map((todo) => (
-          <Card key={todo.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleTodoClick(todo)}>
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="space-y-3 overflow-y-auto">
+          {todoItems.map((todo) => (
+            <Card key={todo.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleTodoClick(todo)}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -200,18 +209,27 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* 处理待办事项的对话框 */}
       <Dialog open={!!selectedTodo} onOpenChange={() => setSelectedTodo(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={cn(
+          "max-h-[90vh] overflow-y-auto",
+          isMobile ? "max-w-[95vw] w-full" : "max-w-4xl w-[95vw] sm:w-auto"
+        )}>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               {selectedTodo && getTodoIcon(selectedTodo.type, selectedTodo)}
-              <span>{selectedTodo?.title}</span>
+              <span className={cn(
+                "truncate",
+                isMobile && "text-base"
+              )}>{selectedTodo?.title}</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className={cn(
+              isMobile && "text-sm"
+            )}>
               {selectedTodo?.description}
             </DialogDescription>
           </DialogHeader>
@@ -224,7 +242,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                   <FileText className="h-4 w-4 mr-2" />
                   批复报告基本信息
                 </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className={cn(
+                  "gap-4 text-sm",
+                  isMobile ? "grid grid-cols-1 space-y-3" : "grid grid-cols-1 sm:grid-cols-2"
+                )}>
                   <div>
                     <span className="font-medium text-gray-700">报告类型:</span>
                     <div className="text-gray-900">{relatedReport.templateName}</div>
@@ -279,7 +300,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                                 <span className="text-blue-600 mr-2">📋</span>
                                 基础信息
                               </h4>
-                              <div className="pl-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                              <div className={cn(
+                                "pl-6 gap-4",
+                                isMobile ? "grid grid-cols-1" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                              )}>
                                 {projectData.projectType && (
                                   <div className="space-y-2">
                                     <label className="flex items-center text-sm font-semibold text-gray-700">
@@ -336,7 +360,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                                 <span className="text-emerald-600 mr-2">💰</span>
                                 财务信息
                               </h4>
-                              <div className="pl-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              <div className={cn(
+                                "pl-6 gap-4",
+                                isMobile ? "grid grid-cols-1" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                              )}>
                                 {projectData.plannedTotalIncome && (
                                   <div className="space-y-2">
                                     <label className="flex items-center text-sm font-semibold text-gray-700">
@@ -455,7 +482,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
             <div className="space-y-4">
               <div className="rounded-lg p-4 bg-blue-50 border border-blue-200">
                 <h4 className="font-medium mb-2">相关项目审批</h4>
-                <div className="text-sm space-y-1">
+                <div className={cn(
+                  "text-sm space-y-1",
+                  isMobile && "space-y-2"
+                )}>
                   <div><span className="font-medium">项目名称:</span> {relatedProject.name}</div>
                   <div><span className="font-medium">项目负责人:</span> {relatedProject.owner}</div>
                   <div><span className="font-medium">提交人:</span> {relatedApproval.submitter}</div>
@@ -469,7 +499,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                       {relatedApproval.status}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className={cn(
+                    "items-center",
+                    isMobile ? "flex flex-col space-y-2 items-start" : "flex justify-between"
+                  )}>
                     <div><span className="font-medium">项目描述:</span> {relatedProject.description}</div>
                     <Button
                       variant="outline"
@@ -478,7 +511,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                         e.stopPropagation()
                         router.push(`/reserve-projects?project=${relatedProject.id}`)
                       }}
-                      className="ml-2 text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                      className={cn(
+                        "text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300",
+                        isMobile ? "w-full justify-center" : "ml-2"
+                      )}
                     >
                       <ExternalLink className="h-3 w-3 mr-1" />
                       查看详情
@@ -499,14 +535,17 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
             </div>
           )}
 
-
-
-          <DialogFooter className="space-x-2">
+          <DialogFooter className={cn(
+            isMobile ? "flex-col space-y-2" : "space-x-2"
+          )}>
             {selectedTodo?.type === "approval_report_confirm" && (
               <Button
                 onClick={() => handleProcessTodo("confirm")}
                 disabled={isProcessing}
-                className="bg-green-600 hover:bg-green-700"
+                className={cn(
+                  "bg-green-600 hover:bg-green-700",
+                  isMobile && "w-full"
+                )}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
                 确认无误
@@ -519,7 +558,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                   variant="outline"
                   onClick={() => handleProcessTodo("reject")}
                   disabled={isProcessing}
-                  className="text-red-600 hover:text-red-700"
+                  className={cn(
+                    "text-red-600 hover:text-red-700",
+                    isMobile && "w-full"
+                  )}
                 >
                   <XCircle className="mr-2 h-4 w-4" />
                   驳回
@@ -527,7 +569,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                 <Button
                   onClick={() => handleProcessTodo("approve")}
                   disabled={isProcessing}
-                  className="bg-green-600 hover:bg-green-700"
+                  className={cn(
+                    "bg-green-600 hover:bg-green-700",
+                    isMobile && "w-full"
+                  )}
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
                   同意
@@ -541,7 +586,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                   variant="outline"
                   onClick={() => handleProcessTodo("reject")}
                   disabled={isProcessing}
-                  className="text-red-600 hover:text-red-700"
+                  className={cn(
+                    "text-red-600 hover:text-red-700",
+                    isMobile && "w-full"
+                  )}
                 >
                   <XCircle className="mr-2 h-4 w-4" />
                   驳回
@@ -549,7 +597,10 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
                 <Button
                   onClick={() => handleProcessTodo("approve")}
                   disabled={isProcessing}
-                  className="bg-green-600 hover:bg-green-700"
+                  className={cn(
+                    "bg-green-600 hover:bg-green-700",
+                    isMobile && "w-full"
+                  )}
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
                   同意
@@ -557,7 +608,11 @@ export default function TodoList({ onTodoProcessed }: TodoListProps) {
               </>
             )}
             
-            <Button variant="outline" onClick={() => setSelectedTodo(null)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setSelectedTodo(null)}
+              className={isMobile ? "w-full" : ""}
+            >
               取消
             </Button>
           </DialogFooter>

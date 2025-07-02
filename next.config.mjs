@@ -30,6 +30,10 @@ const nextConfig = {
     unoptimized: true,
   },
   
+  // 禁用404页面预渲染以避免useContext错误
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
+  
   // 针对生产环境的优化配置
   poweredByHeader: false,
   compress: true,
@@ -42,6 +46,10 @@ const nextConfig = {
     // 移除了 esmExternals，使用默认行为
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  
+  // 设置静态页面生成超时时间（秒）
+  staticPageGenerationTimeout: 60,
+  
   
   webpack: (config, { isServer }) => {
     // 客户端 webpack 配置

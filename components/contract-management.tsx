@@ -28,6 +28,8 @@ import { format } from "date-fns"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 import { getProjects, type Project, getContracts, addContract, updateContract, deleteContract, bindProjectToContract, unbindProjectFromContract, type Contract } from "@/lib/data"
 
 // 合同接口定义已移到 lib/data.ts 中
@@ -58,6 +60,7 @@ interface ContractManagementProps {
 }
 
 export default function ContractManagement({ currentUser }: ContractManagementProps) {
+  const isMobile = useIsMobile()
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -411,21 +414,25 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">合同管理</h2>
-        <div className="flex space-x-3">
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      {/* 页面标题与操作按钮 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">合同管理</h2>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3">
           <Button 
             variant="outline" 
             onClick={handleDownloadTemplate}
-            className="text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            size="sm"
+            className="text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700 px-3 py-2 text-sm"
           >
-            <Download className="mr-2 h-4 w-4" />
-            下载Excel模板
+            <Download className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">下载Excel模板</span>
+            <span className="sm:hidden">模板</span>
           </Button>
           
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-none">
             <Input
               type="file"
               accept=".xls,.xlsx"
@@ -435,18 +442,22 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
             />
             <Button 
               onClick={() => document.getElementById('excel-upload')?.click()}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white w-full px-3 py-2 text-sm"
             >
-              <Upload className="mr-2 h-4 w-4" />
-                              上传合同
+              <Upload className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">上传合同</span>
+              <span className="sm:hidden">上传</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* 搜索区域 */}
-      <div className="mb-6 flex gap-4 items-end flex-shrink-0">
-        <div className="w-[300px]">
+      <div className={cn(
+        "mb-3 sm:mb-4 lg:mb-6 flex gap-2 sm:gap-4 items-end flex-shrink-0"
+      )}>
+        <div className={cn(isMobile ? "w-full" : "w-[300px]")}>
           <Label className="block text-sm font-medium text-gray-700 mb-1">
             搜索合同
           </Label>
@@ -465,7 +476,161 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
       {/* 合同列表 */}
       <div className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1 w-full">
-          <Table className="w-full">
+          {isMobile ? (
+            // 移动端卡片布局
+            <div className="space-y-3 p-1">
+              {filteredContracts.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <div className="flex flex-col items-center space-y-2">
+                    <FileSpreadsheet className="h-12 w-12 text-gray-300" />
+                    <p className="text-lg">暂无合同数据</p>
+                    <p className="text-sm text-gray-400">请点击"上传合同"按钮上传合同信息</p>
+                  </div>
+                </div>
+              ) : (
+                filteredContracts.map((contract) => (
+                  <div key={contract.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    {/* 合同标题行 */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 text-sm leading-tight mb-1">
+                          {contract.contractName}
+                        </h3>
+                        <p className="text-xs text-gray-500 font-mono">
+                          编号: {contract.contractNumber}
+                        </p>
+                      </div>
+                      <div className="ml-3 flex-shrink-0">
+                        {getStatusBadge(getBoundProjectStatus(contract.boundProjectId))}
+                      </div>
+                    </div>
+                    
+                    {/* 合同信息网格 */}
+                    <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">类型:</span>
+                        <span className="ml-1 text-gray-900">{contract.contractType}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">签署日期:</span>
+                        <span className="ml-1 text-gray-900">{contract.signDate}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-500">金额:</span>
+                        <span className="ml-1 text-green-600 font-semibold">{formatAmount(contract.amount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">供应商:</span>
+                        <span className="ml-1 text-gray-900">{contract.supplier}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">责任部门:</span>
+                        <span className="ml-1 text-gray-900">{contract.department}</span>
+                      </div>
+                    </div>
+                    
+                    {/* 绑定项目信息 */}
+                    <div className="mb-3 text-xs">
+                      <span className="text-gray-500">绑定项目:</span>
+                      <span className="ml-1 text-gray-900">{getBoundProjectNames(contract.boundProjectId)}</span>
+                    </div>
+                    
+                    {/* 操作按钮 */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewContract(contract)}
+                          className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          详情
+                        </Button>
+                      </div>
+                      
+                      {/* 项目绑定和删除操作 */}
+                      <div className="flex items-center space-x-2">
+                        {getBoundProjectStatus(contract.boundProjectId) === "已绑定" ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                              >
+                                <LinkIcon className="h-3 w-3 mr-1" />
+                                解绑
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>确认解绑项目</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  确定要解绑合同 "{contract.contractName}" 与项目 "{getBoundProjectNames(contract.boundProjectId)}" 的绑定关系吗？此操作不可撤销。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>取消</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleUnbindProject(contract)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  确认解绑
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleBindProject(contract)}
+                            className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700"
+                          >
+                            <LinkIcon className="h-3 w-3 mr-1" />
+                            绑定
+                          </Button>
+                        )}
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              删除
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>确认删除</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                确定要删除合同 "{contract.contractName}" 吗？此操作不可撤销。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>取消</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteContract(contract.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                删除
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            // 桌面端表格布局
+            <Table className="w-full">
             <TableHeader>
               <TableRow className="h-12 bg-gray-50">
                 <TableHead className="text-center text-sm font-semibold text-gray-700 px-3 py-3 w-[120px] align-middle">
@@ -635,6 +800,7 @@ export default function ContractManagement({ currentUser }: ContractManagementPr
               )}
             </TableBody>
           </Table>
+          )}
         </ScrollArea>
       </div>
 

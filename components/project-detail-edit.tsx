@@ -12,6 +12,8 @@ import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
 import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
 import type { Project, ProjectStatus, FinancialRow } from '@/lib/data'
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 
 interface ProjectDetailEditProps {
   onBack: () => void
@@ -21,6 +23,7 @@ interface ProjectDetailEditProps {
 }
 
 export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }: ProjectDetailEditProps) {
+  const isMobile = useIsMobile()
   const [editedProject, setEditedProject] = useState<Project>({ ...project })
   const [isSaving, setIsSaving] = useState(false)
 
@@ -130,19 +133,38 @@ export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }
   const financialSummary = calculateFinancialSummary()
 
   return (
-    <div className="w-[95%] mx-auto p-6 space-y-6">
+    <div className={cn(
+      "mx-auto space-y-6",
+      isMobile ? "w-full p-4" : "w-[95%] p-6"
+    )}>
       {/* 页面标题 */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
+      <div className={cn(
+        "flex items-center justify-between mb-6",
+        isMobile && "flex-col space-y-4 items-start"
+      )}>
+        <div className={cn(
+          "flex items-center",
+          isMobile ? "space-x-2" : "space-x-4"
+        )}>
           <Button variant="ghost" onClick={onBack} className="p-2">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className={cn(
+            "font-bold text-gray-900 truncate",
+            isMobile ? "text-lg" : "text-2xl"
+          )}>
             {isEditing ? '编辑项目' : '查看项目'} - {editedProject.name}
           </h1>
         </div>
         {isEditing && (
-          <Button onClick={handleSave} disabled={isSaving} className="flex items-center space-x-2">
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving} 
+            className={cn(
+              "flex items-center space-x-2",
+              isMobile && "w-full justify-center"
+            )}
+          >
             <Save className="h-4 w-4" />
             <span>{isSaving ? '提交中...' : '提交'}</span>
           </Button>
@@ -164,7 +186,10 @@ export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }
           <CardTitle>基本信息</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={cn(
+            "grid gap-6",
+            isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          )}>
             {/* 项目名称 */}
             <div className="space-y-2">
               <Label>项目名称 *</Label>
@@ -200,13 +225,12 @@ export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }
 
             {/* 项目负责人 */}
             <div className="space-y-2">
-              <Label>项目负责人 *</Label>
+              <Label>项目负责人</Label>
               <Input 
                 value={editedProject.owner}
                 onChange={(e) => handleInputChange('owner', e.target.value)}
                 disabled={!isEditing}
                 className={!isEditing ? "bg-gray-50" : ""}
-                required
               />
             </div>
 
@@ -242,7 +266,7 @@ export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }
             <div className="space-y-2">
               <Label>归口管理部门</Label>
               <Input 
-                value={editedProject.managementDepartment || ""}
+                value={editedProject.managementDepartment || "未设置"}
                 onChange={(e) => handleInputChange('managementDepartment', e.target.value)}
                 disabled={!isEditing}
                 className={!isEditing ? "bg-gray-50" : ""}
@@ -303,76 +327,68 @@ export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }
                 />
               )}
             </div>
+          </div>
 
-            {/* 实施时间 */}
+          {/* 时间信息 - 响应式布局 */}
+          <div className={cn(
+            "grid gap-6",
+            isMobile ? "grid-cols-1" : "grid-cols-2"
+          )}>
             <div className="space-y-2">
               <Label>实施开始时间</Label>
               <Input 
-                type={isEditing ? "date" : "text"}
-                value={isEditing ? editedProject.startDate || "" : 
-                       (editedProject.startDate ? format(new Date(editedProject.startDate), "yyyy年MM月dd日", { locale: zhCN }) : "未设置")}
+                type="date"
+                value={editedProject.startDate ? format(new Date(editedProject.startDate), "yyyy-MM-dd") : ""}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
                 disabled={!isEditing}
                 className={!isEditing ? "bg-gray-50" : ""}
               />
             </div>
-
             <div className="space-y-2">
               <Label>实施结束时间</Label>
               <Input 
-                type={isEditing ? "date" : "text"}
-                value={isEditing ? editedProject.endDate || "" : 
-                       (editedProject.endDate ? format(new Date(editedProject.endDate), "yyyy年MM月dd日", { locale: zhCN }) : "未设置")}
+                type="date"
+                value={editedProject.endDate ? format(new Date(editedProject.endDate), "yyyy-MM-dd") : ""}
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
-                disabled={!isEditing}
-                className={!isEditing ? "bg-gray-50" : ""}
-              />
-            </div>
-
-            {/* 部门/中心负责人 */}
-            <div className="space-y-2">
-              <Label>部门/中心负责人</Label>
-              <Input 
-                value={editedProject.departmentHead || ""}
-                onChange={(e) => handleInputChange('departmentHead', e.target.value)}
                 disabled={!isEditing}
                 className={!isEditing ? "bg-gray-50" : ""}
               />
             </div>
           </div>
 
-          {/* 必要性、可行性、立项依据 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 项目描述信息 - 响应式布局 */}
+          <div className={cn(
+            "grid gap-6",
+            isMobile ? "grid-cols-1" : "grid-cols-3"
+          )}>
             <div className="space-y-2">
               <Label>必要性</Label>
               <Textarea 
                 value={editedProject.necessity || ""}
                 onChange={(e) => handleInputChange('necessity', e.target.value)}
                 disabled={!isEditing}
-                className={`min-h-[100px] ${!isEditing ? "bg-gray-50" : ""}`}
-                placeholder="请描述项目的必要性..."
+                className={cn("min-h-[80px]", !isEditing && "bg-gray-50")}
+                placeholder="请输入项目必要性"
               />
             </div>
-
             <div className="space-y-2">
               <Label>可行性</Label>
               <Textarea 
                 value={editedProject.feasibility || ""}
                 onChange={(e) => handleInputChange('feasibility', e.target.value)}
                 disabled={!isEditing}
-                className={`min-h-[100px] ${!isEditing ? "bg-gray-50" : ""}`}
-                placeholder="请描述项目的可行性..."
+                className={cn("min-h-[80px]", !isEditing && "bg-gray-50")}
+                placeholder="请输入项目可行性"
               />
             </div>
-
             <div className="space-y-2">
               <Label>立项依据</Label>
               <Textarea 
                 value={editedProject.projectBasis || ""}
                 onChange={(e) => handleInputChange('projectBasis', e.target.value)}
                 disabled={!isEditing}
-                className={`min-h-[100px] ${!isEditing ? "bg-gray-50" : ""}`}
-                placeholder="请填写立项依据..."
+                className={cn("min-h-[80px]", !isEditing && "bg-gray-50")}
+                placeholder="请输入立项依据"
               />
             </div>
           </div>
@@ -384,217 +400,341 @@ export default function ProjectDetailEdit({ onBack, project, isEditing, onSave }
               value={editedProject.implementationPlan || ""}
               onChange={(e) => handleInputChange('implementationPlan', e.target.value)}
               disabled={!isEditing}
-              className={`min-h-[120px] ${!isEditing ? "bg-gray-50" : ""}`}
-              placeholder="请详细描述项目实施方案..."
+              className={cn("min-h-[120px]", !isEditing && "bg-gray-50")}
+              placeholder="请输入项目实施方案"
             />
           </div>
 
-          {/* 项目描述 */}
-          <div className="space-y-2">
-            <Label>项目描述 *</Label>
-            <Textarea 
-              value={editedProject.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              disabled={!isEditing}
-              className={`min-h-[100px] ${!isEditing ? "bg-gray-50" : ""}`}
-              required
-              placeholder="请描述项目的基本情况..."
-            />
+          {/* 部门负责人和备注 - 响应式布局 */}
+          <div className={cn(
+            "grid gap-6",
+            isMobile ? "grid-cols-1" : "grid-cols-2"
+          )}>
+            <div className="space-y-2">
+              <Label>部门负责人</Label>
+              <Input 
+                value={editedProject.departmentHead || ""}
+                onChange={(e) => handleInputChange('departmentHead', e.target.value)}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-50" : ""}
+                placeholder="请输入部门负责人"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>附件文件名</Label>
+              <Input 
+                value={editedProject.attachmentFileName || ""}
+                onChange={(e) => handleInputChange('attachmentFileName', e.target.value)}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-50" : ""}
+                placeholder="请输入附件文件名"
+              />
+            </div>
           </div>
 
-          {/* 备注 */}
           <div className="space-y-2">
             <Label>备注</Label>
             <Textarea 
               value={editedProject.remarks || ""}
               onChange={(e) => handleInputChange('remarks', e.target.value)}
               disabled={!isEditing}
-              className={`min-h-[100px] ${!isEditing ? "bg-gray-50" : ""}`}
-              placeholder="其他需要说明的事项..."
+              className={cn("min-h-[100px]", !isEditing && "bg-gray-50")}
+              placeholder="请输入备注信息"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* 财务信息区 */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>财务信息</CardTitle>
-          {isEditing && (
-            <Button onClick={addFinancialRow} size="sm" className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>添加财务行</span>
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {editedProject.financialRows && editedProject.financialRows.length > 0 ? (
-            <div className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>时间段</TableHead>
-                    <TableHead>计划收入(含税)</TableHead>
-                    <TableHead>收入税率</TableHead>
-                    <TableHead>计划支出(含税)</TableHead>
-                    <TableHead>支出税率</TableHead>
-                    <TableHead>毛利率</TableHead>
-                    {isEditing && <TableHead>操作</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {editedProject.financialRows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Input
-                            type={isEditing ? "date" : "text"}
-                            value={row.startTime}
-                            onChange={(e) => updateFinancialRow(row.id, 'startTime', e.target.value)}
-                            disabled={!isEditing}
-                            className={`w-32 ${!isEditing ? "bg-gray-50" : ""}`}
-                          />
-                          <span className="self-center">至</span>
-                          <Input
-                            type={isEditing ? "date" : "text"}
-                            value={row.endTime}
-                            onChange={(e) => updateFinancialRow(row.id, 'endTime', e.target.value)}
-                            disabled={!isEditing}
-                            className={`w-32 ${!isEditing ? "bg-gray-50" : ""}`}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={row.plannedIncome}
-                          onChange={(e) => updateFinancialRow(row.id, 'plannedIncome', parseFloat(e.target.value) || 0)}
-                          disabled={!isEditing}
-                          className={!isEditing ? "bg-gray-50" : ""}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={row.incomeTaxRate}
-                          onChange={(e) => updateFinancialRow(row.id, 'incomeTaxRate', parseFloat(e.target.value) || 0)}
-                          disabled={!isEditing}
-                          className={!isEditing ? "bg-gray-50" : ""}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={row.plannedExpense}
-                          onChange={(e) => updateFinancialRow(row.id, 'plannedExpense', parseFloat(e.target.value) || 0)}
-                          disabled={!isEditing}
-                          className={!isEditing ? "bg-gray-50" : ""}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={row.expenseTaxRate}
-                          onChange={(e) => updateFinancialRow(row.id, 'expenseTaxRate', parseFloat(e.target.value) || 0)}
-                          disabled={!isEditing}
-                          className={!isEditing ? "bg-gray-50" : ""}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {row.plannedIncome > 0 
-                            ? `${(((row.plannedIncome - row.plannedExpense) / row.plannedIncome) * 100).toFixed(2)}%`
-                            : '0.00%'
-                          }
-                        </span>
-                      </TableCell>
-                      {isEditing && (
-                        <TableCell>
+      {editedProject.financialRows && editedProject.financialRows.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>财务信息</span>
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addFinancialRow}
+                  className="flex items-center space-x-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>添加</span>
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isMobile ? (
+              // 移动端卡片式布局
+              <div className="space-y-4">
+                {editedProject.financialRows.map((row, index) => (
+                  <Card key={row.id} className="border border-gray-200">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">财务记录 {index + 1}</span>
+                        {isEditing && (
                           <Button
-                            variant="outline"
+                            type="button"
+                            variant="ghost"
                             size="sm"
                             onClick={() => removeFinancialRow(row.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700 p-1"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </TableCell>
-                      )}
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">开始时间</Label>
+                          <Input
+                            value={row.startTime}
+                            onChange={(e) => updateFinancialRow(row.id, 'startTime', e.target.value)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">结束时间</Label>
+                          <Input
+                            value={row.endTime}
+                            onChange={(e) => updateFinancialRow(row.id, 'endTime', e.target.value)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">计划收入（含税元）</Label>
+                          <Input
+                            type="number"
+                            value={row.plannedIncome || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'plannedIncome', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">收入税率（%）</Label>
+                          <Input
+                            type="number"
+                            value={row.incomeTaxRate || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'incomeTaxRate', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="13"
+                            max="100"
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">计划支出（含税元）</Label>
+                          <Input
+                            type="number"
+                            value={row.plannedExpense || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'plannedExpense', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">支出税率（%）</Label>
+                          <Input
+                            type="number"
+                            value={row.expenseTaxRate || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'expenseTaxRate', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="13"
+                            max="100"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-xs">毛利率</Label>
+                          <span className="font-medium text-sm">
+                            {row.grossMargin?.toFixed(2) || '0.00'}%
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              // 桌面端表格布局
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]">开始时间</TableHead>
+                      <TableHead className="w-[100px]">结束时间</TableHead>
+                      <TableHead className="w-[120px]">计划收入（含税元）</TableHead>
+                      <TableHead className="w-[100px]">收入税率（%）</TableHead>
+                      <TableHead className="w-[120px]">计划支出（含税元）</TableHead>
+                      <TableHead className="w-[100px]">支出税率（%）</TableHead>
+                      <TableHead className="w-[100px]">毛利率（%）</TableHead>
+                      {isEditing && <TableHead className="w-[80px]">操作</TableHead>}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* 财务摘要 */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold mb-3">财务摘要</h4>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">总收入(含税):</span>
-                    <p className="font-semibold">{financialSummary.totalIncomeWithTax.toLocaleString()} 元</p>
+                  </TableHeader>
+                  <TableBody>
+                    {editedProject.financialRows.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell>
+                          <Input
+                            value={row.startTime}
+                            onChange={(e) => updateFinancialRow(row.id, 'startTime', e.target.value)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={row.endTime}
+                            onChange={(e) => updateFinancialRow(row.id, 'endTime', e.target.value)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={row.plannedIncome || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'plannedIncome', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="0"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={row.incomeTaxRate || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'incomeTaxRate', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="13"
+                            max="100"
+                            min="0"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={row.plannedExpense || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'plannedExpense', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="0"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={row.expenseTaxRate || ''}
+                            onChange={(e) => updateFinancialRow(row.id, 'expenseTaxRate', Number(e.target.value) || 0)}
+                            disabled={!isEditing}
+                            className={cn("text-sm", !isEditing && "bg-gray-50")}
+                            placeholder="13"
+                            max="100"
+                            min="0"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {row.grossMargin?.toFixed(2) || '0.00'}%
+                        </TableCell>
+                        {isEditing && (
+                          <TableCell>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFinancialRow(row.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            
+            {/* 财务摘要 */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-medium mb-3">财务摘要</h3>
+              <div className={cn(
+                "grid gap-4",
+                isMobile ? "grid-cols-1" : "grid-cols-2 md:grid-cols-5"
+              )}>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">总收入（含税）</Label>
+                  <div className="text-sm font-medium bg-gray-50 p-2 rounded border">
+                    {financialSummary.totalIncomeWithTax.toFixed(2)}
                   </div>
-                  <div>
-                    <span className="text-gray-600">总收入(不含税):</span>
-                    <p className="font-semibold">{financialSummary.totalIncomeWithoutTax.toLocaleString()} 元</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">总收入（不含税）</Label>
+                  <div className="text-sm font-medium bg-gray-50 p-2 rounded border">
+                    {financialSummary.totalIncomeWithoutTax.toFixed(2)}
                   </div>
-                  <div>
-                    <span className="text-gray-600">总支出(含税):</span>
-                    <p className="font-semibold">{financialSummary.totalExpenseWithTax.toLocaleString()} 元</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">总支出（含税）</Label>
+                  <div className="text-sm font-medium bg-gray-50 p-2 rounded border">
+                    {financialSummary.totalExpenseWithTax.toFixed(2)}
                   </div>
-                  <div>
-                    <span className="text-gray-600">总支出(不含税):</span>
-                    <p className="font-semibold">{financialSummary.totalExpenseWithoutTax.toLocaleString()} 元</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">总支出（不含税）</Label>
+                  <div className="text-sm font-medium bg-gray-50 p-2 rounded border">
+                    {financialSummary.totalExpenseWithoutTax.toFixed(2)}
                   </div>
-                  <div>
-                    <span className="text-gray-600">整体毛利率:</span>
-                    <p className="font-semibold">{financialSummary.overallGrossMargin.toFixed(2)}%</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">整体毛利率（%）</Label>
+                  <div className="text-sm font-medium bg-gray-50 p-2 rounded border">
+                    {financialSummary.overallGrossMargin.toFixed(2)}%
                   </div>
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>暂无财务信息</p>
-              {isEditing && (
-                <Button onClick={addFinancialRow} className="mt-4">
-                  添加第一条财务记录
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 附件信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>附件信息</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>可研项目建议书</Label>
-              <Input 
-                value={editedProject.attachmentFileName || ""}
-                onChange={(e) => handleInputChange('attachmentFileName', e.target.value)}
-                disabled={!isEditing}
-                className={!isEditing ? "bg-gray-50" : ""}
-                placeholder="附件文件名或路径..."
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 底部操作按钮 */}
-      <div className="flex justify-end space-x-4 pt-6">
-        <Button variant="outline" onClick={onBack}>
-          返回列表
+      <div className={cn(
+        "flex pt-6",
+        isMobile ? "flex-col space-y-3" : "justify-end space-x-4"
+      )}>
+        <Button 
+          variant="outline" 
+          onClick={onBack}
+          className={isMobile ? "w-full" : ""}
+        >
+          取消
         </Button>
         {isEditing && (
-          <Button onClick={handleSave} disabled={isSaving} className="flex items-center space-x-2">
-            <Save className="h-4 w-4" />
-            <span>{isSaving ? '提交中...' : '提交'}</span>
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className={cn(
+              "bg-blue-600 hover:bg-blue-700",
+              isMobile && "w-full"
+            )}
+          >
+            {isSaving ? '保存中...' : '保存'}
           </Button>
         )}
       </div>

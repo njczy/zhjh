@@ -50,9 +50,12 @@ import {
   Target
 } from 'lucide-react'
 import { toast } from "sonner"
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 
 export default function BankReconciliationManagement() {
   const { currentUser: user } = useUser()
+  const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState('overview')
   
   // 数据状态
@@ -342,53 +345,79 @@ export default function BankReconciliationManagement() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* 页面标题 */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">银行对账管理</h1>
-          <p className="text-gray-600">智能匹配银行流水与开票记录，确保财务数据一致性</p>
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+      {/* 页面标题和操作按钮 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center">
+          <div>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">银行对账管理</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">智能匹配银行流水与开票记录，确保财务数据一致性</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-row gap-2 sm:gap-3">
           <Button
             onClick={handleAutoMatch}
             disabled={loading}
             variant="outline"
+            size="sm"
+            className="px-3 py-2 text-sm"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            自动匹配
+            <RefreshCw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">自动匹配</span>
+            <span className="sm:hidden">匹配</span>
           </Button>
           <Button
             onClick={handleGenerateReport}
             disabled={loading}
             variant="outline"
+            size="sm"
+            className="px-3 py-2 text-sm"
           >
-            <FileText className="h-4 w-4 mr-2" />
-            生成报告
+            <FileText className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">生成报告</span>
+            <span className="sm:hidden">报告</span>
           </Button>
           <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
             <DialogTrigger asChild>
-              <Button disabled={loading}>
-                <Upload className="h-4 w-4 mr-2" />
-                导入流水
+              <Button 
+                disabled={loading}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 text-sm"
+              >
+                <Upload className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">导入流水</span>
+                <span className="sm:hidden">导入</span>
               </Button>
             </DialogTrigger>
           </Dialog>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">概览仪表板</TabsTrigger>
-          <TabsTrigger value="transactions">银行流水</TabsTrigger>
-          <TabsTrigger value="matching">匹配管理</TabsTrigger>
-          <TabsTrigger value="reports">对账报告</TabsTrigger>
-        </TabsList>
+      <div className="flex-1 flex flex-col min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm px-1 sm:px-3">
+              <span className="hidden sm:inline">概览仪表板</span>
+              <span className="sm:hidden">概览</span>
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="text-xs sm:text-sm px-1 sm:px-3">
+              <span className="hidden sm:inline">银行流水</span>
+              <span className="sm:hidden">流水</span>
+            </TabsTrigger>
+            <TabsTrigger value="matching" className="text-xs sm:text-sm px-1 sm:px-3">
+              <span className="hidden sm:inline">匹配管理</span>
+              <span className="sm:hidden">匹配</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="text-xs sm:text-sm px-1 sm:px-3">
+              <span className="hidden sm:inline">对账报告</span>
+              <span className="sm:hidden">报告</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* 概览仪表板 */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* 关键指标卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* 概览仪表板 */}
+          <TabsContent value="overview" className="flex-1 space-y-4 sm:space-y-6 overflow-auto">
+            {/* 关键指标卡片 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">总流水数</CardTitle>
@@ -441,7 +470,7 @@ export default function BankReconciliationManagement() {
           </div>
 
           {/* 状态分布图表 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>匹配状态分布</CardTitle>
@@ -516,11 +545,11 @@ export default function BankReconciliationManagement() {
         </TabsContent>
 
         {/* 银行流水 */}
-        <TabsContent value="transactions" className="space-y-6">
+        <TabsContent value="transactions" className="flex-1 space-y-4 sm:space-y-6 overflow-auto">
           {/* 搜索和过滤 */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
                 <div className="flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -533,7 +562,7 @@ export default function BankReconciliationManagement() {
                   </div>
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="选择状态" />
                   </SelectTrigger>
                   <SelectContent>
@@ -554,59 +583,160 @@ export default function BankReconciliationManagement() {
               <CardTitle>银行流水列表</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>交易日期</TableHead>
-                    <TableHead>流水号</TableHead>
-                    <TableHead>对方户名</TableHead>
-                    <TableHead>金额</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>关联开票</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.map((transaction) => {
-                    const relatedMatch = matchResults.find(m => m.bankTransactionId === transaction.id)
-                    const relatedInvoice = transaction.relatedInvoiceId 
-                      ? invoices.find(inv => inv.id === transaction.relatedInvoiceId)
-                      : null
-                    
-                    return (
-                      <TableRow key={transaction.id}>
-                        <TableCell>{transaction.transactionDate}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {transaction.transactionNumber}
-                        </TableCell>
-                        <TableCell>{transaction.counterpartyName}</TableCell>
-                        <TableCell className="font-medium">
-                          ¥{transaction.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              transaction.status === 'matched' ? 'default' :
-                              transaction.status === 'manual_linked' ? 'secondary' :
-                              transaction.status === 'frozen' ? 'destructive' : 'outline'
-                            }
-                          >
-                            {transaction.status === 'matched' ? '已匹配' :
-                             transaction.status === 'manual_linked' ? '手动关联' :
-                             transaction.status === 'frozen' ? '已冻结' : '未匹配'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {relatedInvoice ? (
-                            <span className="text-sm text-blue-600">
-                              {relatedInvoice.contractName}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
+              {/* 桌面端表格 */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>交易日期</TableHead>
+                      <TableHead>流水号</TableHead>
+                      <TableHead>对方户名</TableHead>
+                      <TableHead>金额</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead>关联开票</TableHead>
+                      <TableHead>操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTransactions.map((transaction) => {
+                      const relatedMatch = matchResults.find(m => m.bankTransactionId === transaction.id)
+                      const relatedInvoice = transaction.relatedInvoiceId 
+                        ? invoices.find(inv => inv.id === transaction.relatedInvoiceId)
+                        : null
+                      
+                      return (
+                        <TableRow key={transaction.id}>
+                          <TableCell>{transaction.transactionDate}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {transaction.transactionNumber}
+                          </TableCell>
+                          <TableCell>{transaction.counterpartyName}</TableCell>
+                          <TableCell className="font-medium">
+                            ¥{transaction.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                transaction.status === 'matched' ? 'default' :
+                                transaction.status === 'manual_linked' ? 'secondary' :
+                                transaction.status === 'frozen' ? 'destructive' : 'outline'
+                              }
+                            >
+                              {transaction.status === 'matched' ? '已匹配' :
+                               transaction.status === 'manual_linked' ? '手动关联' :
+                               transaction.status === 'frozen' ? '已冻结' : '未匹配'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {relatedInvoice ? (
+                              <span className="text-sm text-blue-600">
+                                {relatedInvoice.contractName}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedTransaction(transaction)
+                                  setShowManualLinkDialog(true)
+                                }}
+                                disabled={transaction.status !== 'unmatched'}
+                              >
+                                <Link className="h-4 w-4" />
+                              </Button>
+                              {relatedMatch && relatedMatch.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedMatch(relatedMatch)
+                                    setShowMatchDialog(true)
+                                  }}
+                                >
+                                  审核
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 移动端卡片布局 */}
+              <div className="md:hidden space-y-3">
+                {filteredTransactions.map((transaction) => {
+                  const relatedMatch = matchResults.find(m => m.bankTransactionId === transaction.id)
+                  const relatedInvoice = transaction.relatedInvoiceId 
+                    ? invoices.find(inv => inv.id === transaction.relatedInvoiceId)
+                    : null
+                  
+                  return (
+                    <Card key={transaction.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* 头部信息 */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium text-lg">
+                                ¥{transaction.amount.toLocaleString()}
+                              </span>
+                            </div>
+                            <Badge 
+                              variant={
+                                transaction.status === 'matched' ? 'default' :
+                                transaction.status === 'manual_linked' ? 'secondary' :
+                                transaction.status === 'frozen' ? 'destructive' : 'outline'
+                              }
+                            >
+                              {transaction.status === 'matched' ? '已匹配' :
+                               transaction.status === 'manual_linked' ? '手动关联' :
+                               transaction.status === 'frozen' ? '已冻结' : '未匹配'}
+                            </Badge>
+                          </div>
+
+                          {/* 交易信息 */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3 w-3 text-gray-400" />
+                              <span className="text-sm text-gray-600">
+                                {transaction.transactionDate}
+                              </span>
+                            </div>
+                            
+                            <div className="text-sm">
+                              <div className="font-medium">{transaction.counterpartyName}</div>
+                              <div className="text-gray-500 font-mono text-xs mt-1">
+                                {transaction.transactionNumber}
+                              </div>
+                            </div>
+
+                            {/* 关联开票信息 */}
+                            {relatedInvoice ? (
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-3 w-3 text-blue-500" />
+                                <span className="text-sm text-blue-600">
+                                  {relatedInvoice.contractName}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm text-gray-400">暂无关联开票</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 操作按钮 */}
+                          <div className="flex gap-2 pt-2 border-t border-gray-100">
                             <Button
                               variant="outline"
                               size="sm"
@@ -615,8 +745,10 @@ export default function BankReconciliationManagement() {
                                 setShowManualLinkDialog(true)
                               }}
                               disabled={transaction.status !== 'unmatched'}
+                              className="flex-1"
                             >
-                              <Link className="h-4 w-4" />
+                              <Link className="h-3 w-3 mr-1" />
+                              手动关联
                             </Button>
                             {relatedMatch && relatedMatch.status === 'pending' && (
                               <Button
@@ -626,158 +758,279 @@ export default function BankReconciliationManagement() {
                                   setSelectedMatch(relatedMatch)
                                   setShowMatchDialog(true)
                                 }}
+                                className="flex-1"
                               >
+                                <Eye className="h-3 w-3 mr-1" />
                                 审核
                               </Button>
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+                
+                {filteredTransactions.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    暂无银行流水数据
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* 匹配管理 */}
-        <TabsContent value="matching" className="space-y-6">
+        <TabsContent value="matching" className="flex-1 space-y-4 sm:space-y-6 overflow-auto">
           <Card>
             <CardHeader>
               <CardTitle>匹配结果管理</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>匹配类型</TableHead>
-                    <TableHead>银行流水</TableHead>
-                    <TableHead>关联开票</TableHead>
-                    <TableHead>置信度</TableHead>
-                    <TableHead>金额差异</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMatches.map((match) => {
-                    const transaction = transactions.find(t => t.id === match.bankTransactionId)
-                    const invoice = invoices.find(inv => inv.id === match.invoiceId)
-                    
-                    return (
-                      <TableRow key={match.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getMatchStatusIcon(match)}
-                            <span className="text-sm">{getMatchStatusText(match)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {transaction && (
-                            <div className="space-y-1">
-                              <div className="font-medium">{transaction.counterpartyName}</div>
-                              <div className="text-sm text-gray-600">
-                                ¥{transaction.amount.toLocaleString()}
-                              </div>
+              {/* 桌面端表格 */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>匹配类型</TableHead>
+                      <TableHead>银行流水</TableHead>
+                      <TableHead>关联开票</TableHead>
+                      <TableHead>置信度</TableHead>
+                      <TableHead>金额差异</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead>操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMatches.map((match) => {
+                      const transaction = transactions.find(t => t.id === match.bankTransactionId)
+                      const invoice = invoices.find(inv => inv.id === match.invoiceId)
+                      
+                      return (
+                        <TableRow key={match.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getMatchStatusIcon(match)}
+                              <span className="text-sm">{getMatchStatusText(match)}</span>
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {invoice && (
-                            <div className="space-y-1">
-                              <div className="font-medium">{invoice.contractName}</div>
-                              <div className="text-sm text-gray-600">
-                                ¥{invoice.invoiceAmount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {transaction && (
+                              <div className="space-y-1">
+                                <div className="font-medium">{transaction.counterpartyName}</div>
+                                <div className="text-sm text-gray-600">
+                                  ¥{transaction.amount.toLocaleString()}
+                                </div>
                               </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {invoice && (
+                              <div className="space-y-1">
+                                <div className="font-medium">{invoice.contractName}</div>
+                                <div className="text-sm text-gray-600">
+                                  ¥{invoice.invoiceAmount.toLocaleString()}
+                                </div>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress value={match.confidence} className="w-16" />
+                              <span className="text-sm">{match.confidence}%</span>
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={match.confidence} className="w-16" />
-                            <span className="text-sm">{match.confidence}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={match.amountDifference > 0 ? 'text-red-600' : 'text-green-600'}>
-                            ¥{match.amountDifference.toLocaleString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              match.status === 'confirmed' ? 'default' :
-                              match.status === 'pending' ? 'secondary' : 'destructive'
-                            }
-                          >
-                            {match.status === 'confirmed' ? '已确认' :
-                             match.status === 'pending' ? '待审核' : '已拒绝'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {match.status === 'pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedMatch(match)
-                                setShowMatchDialog(true)
-                              }}
+                          </TableCell>
+                          <TableCell>
+                            <span className={match.amountDifference > 0 ? 'text-red-600' : 'text-green-600'}>
+                              ¥{match.amountDifference.toLocaleString()}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                match.status === 'confirmed' ? 'default' :
+                                match.status === 'pending' ? 'secondary' : 'destructive'
+                              }
                             >
-                              审核
-                            </Button>
+                              {match.status === 'confirmed' ? '已确认' :
+                               match.status === 'pending' ? '待审核' : '已拒绝'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {match.status === 'pending' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedMatch(match)
+                                  setShowMatchDialog(true)
+                                }}
+                              >
+                                审核
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 移动端卡片布局 */}
+              <div className="md:hidden space-y-3">
+                {filteredMatches.map((match) => {
+                  const transaction = transactions.find(t => t.id === match.bankTransactionId)
+                  const invoice = invoices.find(inv => inv.id === match.invoiceId)
+                  
+                  return (
+                    <Card key={match.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* 匹配类型和状态 */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {getMatchStatusIcon(match)}
+                              <span className="text-sm font-medium">{getMatchStatusText(match)}</span>
+                            </div>
+                            <Badge 
+                              variant={
+                                match.status === 'confirmed' ? 'default' :
+                                match.status === 'pending' ? 'secondary' : 'destructive'
+                              }
+                            >
+                              {match.status === 'confirmed' ? '已确认' :
+                               match.status === 'pending' ? '待审核' : '已拒绝'}
+                            </Badge>
+                          </div>
+
+                          {/* 银行流水信息 */}
+                          {transaction && (
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <DollarSign className="h-4 w-4 text-blue-500" />
+                                <span className="text-sm font-medium text-blue-700">银行流水</span>
+                              </div>
+                              <div className="text-sm">
+                                <div className="font-medium">{transaction.counterpartyName}</div>
+                                <div className="text-blue-600 font-medium">
+                                  ¥{transaction.amount.toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
                           )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+
+                          {/* 关联开票信息 */}
+                          {invoice && (
+                            <div className="bg-green-50 p-3 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <FileText className="h-4 w-4 text-green-500" />
+                                <span className="text-sm font-medium text-green-700">关联开票</span>
+                              </div>
+                              <div className="text-sm">
+                                <div className="font-medium">{invoice.contractName}</div>
+                                <div className="text-green-600 font-medium">
+                                  ¥{invoice.invoiceAmount.toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 匹配详情 */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">置信度</span>
+                              <div className="flex items-center gap-2">
+                                <Progress value={match.confidence} className="w-16" />
+                                <span className="text-sm font-medium">{match.confidence}%</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">金额差异</span>
+                              <span className={cn(
+                                "text-sm font-medium",
+                                match.amountDifference > 0 ? 'text-red-600' : 'text-green-600'
+                              )}>
+                                ¥{match.amountDifference.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 操作按钮 */}
+                          {match.status === 'pending' && (
+                            <div className="pt-2 border-t border-gray-100">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedMatch(match)
+                                  setShowMatchDialog(true)
+                                }}
+                                className="w-full"
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                审核匹配结果
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+                
+                {filteredMatches.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    暂无匹配结果数据
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* 对账报告 */}
-        <TabsContent value="reports" className="space-y-6">
+        <TabsContent value="reports" className="flex-1 space-y-4 sm:space-y-6 overflow-auto">
           <Card>
             <CardHeader>
               <CardTitle>对账报告列表</CardTitle>
             </CardHeader>
             <CardContent>
-              {reports.length > 0 ? (
+{reports.length > 0 ? (
                 <div className="space-y-4">
                   {reports.map((report) => (
                     <div key={report.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-semibold">{report.reportDate} 对账报告</h3>
-                          <p className="text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base sm:text-lg">{report.reportDate} 对账报告</h3>
+                          <p className="text-sm text-gray-600 mt-1">
                             生成时间: {new Date(report.generatedAt).toLocaleString()}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="self-start sm:self-auto">
                           <Download className="h-4 w-4 mr-2" />
                           下载
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <div className="text-gray-600">总流水数</div>
-                          <div className="font-semibold">{report.totalTransactions}</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-gray-600 text-xs mb-1">总流水数</div>
+                          <div className="font-semibold text-lg">{report.totalTransactions}</div>
                         </div>
-                        <div>
-                          <div className="text-gray-600">匹配成功率</div>
-                          <div className="font-semibold">{report.matchSuccessRate.toFixed(1)}%</div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-gray-600 text-xs mb-1">匹配成功率</div>
+                          <div className="font-semibold text-lg text-green-600">{report.matchSuccessRate.toFixed(1)}%</div>
                         </div>
-                        <div>
-                          <div className="text-gray-600">总金额</div>
-                          <div className="font-semibold">¥{report.totalAmount.toLocaleString()}</div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-gray-600 text-xs mb-1">总金额</div>
+                          <div className="font-semibold text-base sm:text-lg">¥{report.totalAmount.toLocaleString()}</div>
                         </div>
-                        <div>
-                          <div className="text-gray-600">异常流水</div>
-                          <div className="font-semibold">{report.exceptionTransactions.length}</div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-gray-600 text-xs mb-1">异常流水</div>
+                          <div className="font-semibold text-lg text-red-600">{report.exceptionTransactions.length}</div>
                         </div>
                       </div>
                     </div>
@@ -791,7 +1044,8 @@ export default function BankReconciliationManagement() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
 
       {/* 导入银行流水对话框 */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>

@@ -66,6 +66,14 @@ Projects move through these statuses:
 
 ## Development Considerations
 
+### 关键开发原则
+
+**桌面端优先，移动端适配原则：**
+- **功能一致性**：这个项目先有客户端（桌面端）才有移动端，移动端只是展示效果要符合移动端展示，功能上和客户端必须完全一样
+- **开发顺序**：先确保桌面端功能正确，然后让移动端完全复制桌面端的功能逻辑
+- **适配范围**：移动端只在UI展示层面做适配（布局、尺寸、交互方式等），不能改变业务逻辑
+- **同步修改**：任何功能变更都要确保桌面端和移动端行为完全一致
+
 ### Known Issues
 - SWC binary loading issues in shared folders - use `NEXT_DISABLE_SWC_WASM=1` environment variable
 - Build ignores ESLint and TypeScript errors (configured in next.config.mjs)

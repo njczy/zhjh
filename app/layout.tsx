@@ -3,14 +3,14 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { UserProvider } from "@/contexts/UserContext" // Import UserProvider
-import { StagewiseToolbar } from "@stagewise/toolbar-next" // Import Stagewise toolbar
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "电试院项目管理系统",
   description: "储备项目管理模块",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
 }
 
 export default function RootLayout({
@@ -25,14 +25,6 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <UserProvider>
-          {process.env.NODE_ENV === 'development' && (
-            <StagewiseToolbar 
-              config={{
-                plugins: []
-              }}
-              enabled={true}
-            />
-          )}
           {children}
         </UserProvider> {/* Wrap children with UserProvider */}
       </body>

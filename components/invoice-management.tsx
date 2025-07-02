@@ -14,6 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Plus, Search, FileText, Eye, AlertTriangle, DollarSign, Calendar, RefreshCw, XCircle } from 'lucide-react'
+import { useIsMobile } from "@/components/ui/use-mobile"
+import { cn } from "@/lib/utils"
 import { 
   User, 
   Contract, 
@@ -38,6 +40,8 @@ interface InvoiceManagementProps {
 }
 
 export default function InvoiceManagementComponent({ currentUser }: InvoiceManagementProps) {
+  const isMobile = useIsMobile()
+  
   // 状态管理
   const [contracts, setContracts] = useState<Contract[]>([])
   const [invoices, setInvoices] = useState<InvoiceManagement[]>([])
@@ -338,26 +342,33 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
       {/* 页面标题和操作按钮 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">开票管理</h1>
-          <p className="text-gray-600 mt-1">管理发票开具和回款跟踪</p>
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">开票管理</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">管理发票开具和回款跟踪</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-row gap-2 sm:gap-3">
           <Button 
             variant="outline" 
             onClick={loadWarningMessages}
-            className="text-orange-600 border-orange-600 hover:bg-orange-50"
+            size="sm"
+            className="text-orange-600 border-orange-600 hover:bg-orange-50 px-3 py-2 text-sm"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            刷新预警
+            <RefreshCw className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">刷新预警</span>
+            <span className="sm:hidden">预警</span>
           </Button>
           {canManualInvoice && (
-            <Button onClick={handleCreateInvoice} className="bg-gray-600 hover:bg-gray-700 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              手动开票
+            <Button 
+              onClick={handleCreateInvoice} 
+              size="sm"
+              className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 text-sm"
+            >
+              <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">手动开票</span>
+              <span className="sm:hidden">开票</span>
             </Button>
           )}
         </div>
@@ -387,7 +398,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
             <div className="flex-1">
               <Label htmlFor="search">搜索</Label>
               <div className="relative">
@@ -401,7 +412,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
                 />
               </div>
             </div>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <Label>状态筛选</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
@@ -429,74 +440,183 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
           <CardTitle>开票列表</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[600px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>发票号码</TableHead>
-                  <TableHead>合同编号</TableHead>
-                  <TableHead>合同名称</TableHead>
-                  <TableHead>开票金额</TableHead>
-                  <TableHead>已回款</TableHead>
-                  <TableHead>剩余金额</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>预警</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                    <TableCell>{invoice.contractCode}</TableCell>
-                    <TableCell>{invoice.contractName}</TableCell>
-                    <TableCell>¥{invoice.invoiceAmount.toLocaleString()}</TableCell>
-                    <TableCell>¥{invoice.paidAmount.toLocaleString()}</TableCell>
-                    <TableCell>¥{invoice.remainingAmount.toLocaleString()}</TableCell>
-                    <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                    <TableCell>{getWarningBadge(invoice.warningLevel)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+          {/* 桌面端表格 */}
+          <div className="hidden md:block">
+            <ScrollArea className="h-[600px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>发票号码</TableHead>
+                    <TableHead>合同编号</TableHead>
+                    <TableHead>合同名称</TableHead>
+                    <TableHead>开票金额</TableHead>
+                    <TableHead>已回款</TableHead>
+                    <TableHead>剩余金额</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>预警</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                      <TableCell>{invoice.contractCode}</TableCell>
+                      <TableCell>{invoice.contractName}</TableCell>
+                      <TableCell>¥{invoice.invoiceAmount.toLocaleString()}</TableCell>
+                      <TableCell>¥{invoice.paidAmount.toLocaleString()}</TableCell>
+                      <TableCell>¥{invoice.remainingAmount.toLocaleString()}</TableCell>
+                      <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                      <TableCell>{getWarningBadge(invoice.warningLevel)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewingInvoice(invoice)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {(invoice.status === 'pending_payment' || invoice.status === 'partial_payment') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPaymentInvoice(invoice)
+                                setPaymentAmount(0)
+                                setIsPaymentDialogOpen(true)
+                              }}
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {invoice.status !== 'cancelled' && canManualInvoice && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setRedReverseInvoiceData(invoice)
+                                setRedReverseReason('')
+                                setIsRedReverseDialogOpen(true)
+                              }}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+
+          {/* 移动端卡片布局 */}
+          <div className="md:hidden space-y-3 max-h-[600px] overflow-y-auto">
+            {filteredInvoices.map((invoice) => (
+              <Card key={invoice.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* 头部信息 */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium font-mono text-sm">
+                          {invoice.invoiceNumber}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(invoice.status)}
+                        {getWarningBadge(invoice.warningLevel)}
+                      </div>
+                    </div>
+
+                    {/* 合同信息 */}
+                    <div className="space-y-2">
+                      <div>
+                        <div className="font-medium">{invoice.contractName}</div>
+                        <div className="text-sm text-gray-500 font-mono">
+                          {invoice.contractCode}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 金额信息 */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-blue-50 p-2 rounded-lg text-center">
+                        <div className="text-xs text-blue-600 mb-1">开票金额</div>
+                        <div className="text-sm font-medium text-blue-800">
+                          ¥{invoice.invoiceAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-green-50 p-2 rounded-lg text-center">
+                        <div className="text-xs text-green-600 mb-1">已回款</div>
+                        <div className="text-sm font-medium text-green-800">
+                          ¥{invoice.paidAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-orange-50 p-2 rounded-lg text-center">
+                        <div className="text-xs text-orange-600 mb-1">剩余金额</div>
+                        <div className="text-sm font-medium text-orange-800">
+                          ¥{invoice.remainingAmount.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 操作按钮 */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewingInvoice(invoice)}
+                        className="flex-1"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        查看详情
+                      </Button>
+                      {(invoice.status === 'pending_payment' || invoice.status === 'partial_payment') && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setViewingInvoice(invoice)}
+                          onClick={() => {
+                            setPaymentInvoice(invoice)
+                            setPaymentAmount(0)
+                            setIsPaymentDialogOpen(true)
+                          }}
+                          className="flex-1"
                         >
-                          <Eye className="h-4 w-4" />
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          回款
                         </Button>
-                        {(invoice.status === 'pending_payment' || invoice.status === 'partial_payment') && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setPaymentInvoice(invoice)
-                              setPaymentAmount(0)
-                              setIsPaymentDialogOpen(true)
-                            }}
-                          >
-                            <DollarSign className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {invoice.status !== 'cancelled' && canManualInvoice && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setRedReverseInvoiceData(invoice)
-                              setRedReverseReason('')
-                              setIsRedReverseDialogOpen(true)
-                            }}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+                      )}
+                      {invoice.status !== 'cancelled' && canManualInvoice && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setRedReverseInvoiceData(invoice)
+                            setRedReverseReason('')
+                            setIsRedReverseDialogOpen(true)
+                          }}
+                          className="flex-1"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          红冲
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {filteredInvoices.length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                暂无开票数据
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -550,7 +670,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
                 </TabsList>
                 
                 <TabsContent value="basic" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>发票号码 *</Label>
                       <Input
@@ -664,7 +784,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
             
             <div className="space-y-6">
               {/* 基本信息 */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-500">发票号码</Label>
                   <p className="mt-1 font-medium">{viewingInvoice.invoiceNumber}</p>
@@ -686,7 +806,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
               {/* 金额信息 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">金额信息</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">开票金额</Label>
                     <p className="mt-1 text-blue-600 font-medium">¥{viewingInvoice.invoiceAmount.toLocaleString()}</p>
@@ -705,7 +825,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
               {/* 时间信息 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">时间信息</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">开票日期</Label>
                     <p className="mt-1">{new Date(viewingInvoice.invoiceDate).toLocaleDateString()}</p>
@@ -726,7 +846,7 @@ export default function InvoiceManagementComponent({ currentUser }: InvoiceManag
               {/* 状态信息 */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">状态信息</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">当前状态</Label>
                     <p className="mt-1">{getStatusBadge(viewingInvoice.status)}</p>
