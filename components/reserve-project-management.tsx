@@ -1055,20 +1055,8 @@ function ReserveProjectManagementWithParams() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            {/* 移动端：简化显示，桌面端：完整显示 */}
-            <span className={cn(
-              "text-gray-600",
-              isMobile ? "text-xs" : "text-xs sm:text-sm",
-              isMobile ? "block" : "hidden sm:inline"
-            )}>
-              {isMobile ? (
-                <div className="text-center">
-                  <div className="font-medium">{currentUser.name}</div>
-                  <div className="text-xs text-gray-500">{currentUser.role}</div>
-                </div>
-              ) : (
-                `当前用户: ${currentUser.name} (${currentUser.role} - ${currentUser.center || currentUser.department})`
-              )}
+            <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
+              当前用户: {currentUser.name} ({currentUser.role} - {currentUser.center || currentUser.department})
             </span>
             <Select
               value={currentUser.id}
