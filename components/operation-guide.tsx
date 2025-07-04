@@ -28,9 +28,12 @@ import {
   Building,
   Clock,
   Target,
-  XCircle
+  XCircle,
+  ChevronUp,
+  Menu
 } from "lucide-react"
 import { useUser } from "@/contexts/UserContext"
+import { useIsMobile } from "@/components/ui/use-mobile"
 
 // 角色权限配置 - 基于实际系统功能
 const ROLE_PERMISSIONS = {
@@ -369,13 +372,14 @@ const QUICK_START_GUIDES = {
       {
         title: "收款汇总管理",
         steps: [
-          "查看项目结算汇总统计",
-          "分析回款率和逾期情况",
-          "生成结算统计报表",
-          "发送催款通知",
-          "跟踪欠款回收进度"
+          "查看累计合同金额、已回款总额等汇总数据",
+          "按合同状态筛选：已回款、部分回款、待回款、严重逾期",
+          "查看合同收款详情和回款记录",
+          "修改回款金额（限财务部门）",
+          "发送催收通知给逾期客户",
+          "分析回款率和逾期情况统计"
         ],
-        tips: "建立结算台账，加强资金管理"
+        tips: "系统提供完整的合同收款状态看板，支持按状态筛选和详细查看"
       },
       {
         title: "银行对账操作",
@@ -484,9 +488,19 @@ const FAQ_DATA = {
   ],
   "settlement": [
     {
-      q: "如何查看项目回款情况？",
-      a: "在结算管理的收款汇总页面可以查看各项目的开票金额、回款金额和逾期情况。",
+      q: "收款汇总页面显示哪些信息？",
+      a: "显示累计合同金额、已回款总额、逾期账款金额、回款完成率等汇总统计，以及详细的合同状态看板。",
       roles: ["部门专职", "部门领导"]
+    },
+    {
+      q: "合同状态有哪些类型？",
+      a: "包含已回款（✅）、部分回款（⚠）、待回款（⌛）、严重逾期（🚨）四种状态，可按状态筛选查看。",
+      roles: ["部门专职", "部门领导"]
+    },
+    {
+      q: "如何修改合同回款金额？",
+      a: "财务部门专职可以点击回款金额链接进行修改，系统会验证金额不能超过合同总额。",
+      roles: ["部门专职（财务部）"]
     },
     {
       q: "银行对账如何操作？",
@@ -494,14 +508,9 @@ const FAQ_DATA = {
       roles: ["部门专职（财务部）"]
     },
     {
-      q: "逾期账款如何处理？",
-      a: "系统会自动预警逾期账款，需要及时发送催款通知，跟踪回收进度，必要时采取法律措施。",
-      roles: ["部门专职"]
-    },
-    {
-      q: "对账差异如何处理？",
-      a: "对于银行流水与业务数据的差异，需要核实原因，可能是手续费、部分付款等，需要手动调整。",
-      roles: ["部门专职（财务部）"]
+      q: "移动端和桌面端功能有区别吗？",
+      a: "功能完全一致，移动端采用卡片式布局，支持简化筛选，桌面端使用表格布局提供更详细的信息展示。",
+      roles: ["所有角色"]
     }
   ]
 }
@@ -542,19 +551,22 @@ const OPERATION_TIPS = {
     "关注审批流程，及时响应审批意见"
   ],
   "settlement": [
-    "建立开票提醒机制，确保及时开票",
-    "定期进行银行对账，及时发现差异",
-    "关注回款风险，建立预警机制",
-    "加强逾期账款管理，提高回收率",
-    "做好财务数据分析，为决策提供支持",
-    "建立客户信用档案，评估回款风险"
+    "利用系统的合同状态看板功能，实时监控各合同的回款情况",
+    "定期查看汇总统计数据，分析整体回款趋势和完成率",
+    "对严重逾期的合同及时发送催收通知，建立催收记录",
+    "使用移动端随时查看合同状态，提高工作效率",
+    "财务人员应及时更新回款记录，确保数据准确性",
+    "定期进行银行对账，及时发现和处理差异记录",
+    "建立客户信用档案，评估回款风险和制定收款策略"
   ]
 }
 
 export default function OperationGuide() {
   const { currentUser } = useUser()
+  const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedModule, setSelectedModule] = useState("reserve")
+  const [showTabMenu, setShowTabMenu] = useState(false)
   
   const currentRole = currentUser?.role || "中心专职"
   const roleConfig = ROLE_PERMISSIONS[currentRole as keyof typeof ROLE_PERMISSIONS]
@@ -612,38 +624,38 @@ export default function OperationGuide() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className={`mx-auto max-w-6xl ${isMobile ? 'p-4' : 'p-6'}`}>
       {/* 页面标题 */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <BookOpen className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">运营管控平台操作说明</h1>
+      <div className={isMobile ? 'mb-6' : 'mb-8'}>
+        <div className={`flex items-center gap-3 mb-4 ${isMobile ? 'gap-2' : ''}`}>
+          <BookOpen className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-blue-600`} />
+          <h1 className={`font-bold text-gray-900 ${isMobile ? 'text-xl' : 'text-3xl'}`}>运营管控平台操作说明</h1>
         </div>
         
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
-          <div className="flex items-center gap-4 mb-4">
-            <Users className="h-6 w-6 text-blue-600" />
+        <div className={`bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border ${isMobile ? 'p-4' : 'p-6'}`}>
+          <div className={`flex items-center gap-4 mb-4 ${isMobile ? 'gap-3' : ''}`}>
+            <Users className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-blue-600`} />
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">欢迎使用储备项目管理系统</h2>
-              <p className="text-gray-600 mt-1">基于角色的项目全生命周期管理平台</p>
+              <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-lg' : 'text-xl'}`}>欢迎使用储备项目管理系统</h2>
+              <p className={`text-gray-600 mt-1 ${isMobile ? 'text-sm' : ''}`}>基于角色的项目全生命周期管理平台</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2 mb-3">
+          <div className={`flex items-center gap-2 mb-3 ${isMobile ? 'flex-col items-start gap-2' : ''}`}>
             <Badge className={roleConfig?.color}>
               当前角色：{roleConfig?.name}
             </Badge>
-            <span className="text-gray-600">•</span>
-            <span className="text-sm text-gray-600">{roleConfig?.description}</span>
+            {!isMobile && <span className="text-gray-600">•</span>}
+            <span className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-sm'}`}>{roleConfig?.description}</span>
           </div>
           
           <div className="mt-4">
-            <p className="text-sm text-gray-600 mb-3">
+            <p className={`text-gray-600 mb-3 ${isMobile ? 'text-sm' : 'text-sm'}`}>
               <span className="font-medium">点击下方功能模块卡片</span>，查看详细操作说明
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
             {Object.entries(MODULE_CONFIG).map(([key, module]) => {
               const Icon = module.icon
               const isSelected = selectedModule === key
@@ -652,25 +664,26 @@ export default function OperationGuide() {
                   key={key} 
                   onClick={() => setSelectedModule(key)}
                   className={`
-                    relative cursor-pointer p-3 rounded-lg border-2 shadow-sm transition-all duration-200 hover:shadow-md
+                    relative cursor-pointer rounded-lg border-2 shadow-sm transition-all duration-200 hover:shadow-md
+                    ${isMobile ? 'p-4' : 'p-3'}
                     ${isSelected 
                       ? 'border-blue-500 bg-blue-50 shadow-md' 
                       : 'border-gray-200 bg-white hover:border-gray-300'
                     }
                   `}
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon className={`h-4 w-4 ${isSelected ? 'text-blue-600' : module.color}`} />
-                    <span className={`font-medium text-sm ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                  <div className={`flex items-center gap-2 mb-2 ${isMobile ? 'mb-3' : ''}`}>
+                    <Icon className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} ${isSelected ? 'text-blue-600' : module.color}`} />
+                    <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'} ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
                       {module.name}
                     </span>
                   </div>
-                  <p className={`text-xs ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                  <p className={`${isMobile ? 'text-sm' : 'text-xs'} ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
                     {module.description}
                   </p>
                   {isSelected && (
                     <div className="absolute top-2 right-2">
-                      <CheckCircle className="h-4 w-4 text-blue-500" />
+                      <CheckCircle className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} text-blue-500`} />
                     </div>
                   )}
                 </div>
@@ -681,13 +694,75 @@ export default function OperationGuide() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">功能概览</TabsTrigger>
-          <TabsTrigger value="quickstart">快速入门</TabsTrigger>
-          <TabsTrigger value="permissions">权限说明</TabsTrigger>
-          <TabsTrigger value="faq">常见问题</TabsTrigger>
-          <TabsTrigger value="tips">操作技巧</TabsTrigger>
-        </TabsList>
+        {isMobile ? (
+          // 移动端：下拉选择式导航
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowTabMenu(!showTabMenu)}
+              className="w-full flex items-center justify-between h-12 text-sm font-medium"
+            >
+              <span className="flex items-center">
+                <Menu className="h-4 w-4 mr-2" />
+                {activeTab === "overview" && "功能概览"}
+                {activeTab === "quickstart" && "快速入门"}
+                {activeTab === "permissions" && "权限说明"}
+                {activeTab === "faq" && "常见问题"}
+                {activeTab === "tips" && "操作技巧"}
+              </span>
+              {showTabMenu ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            
+            {showTabMenu && (
+              <div className="mt-2 grid grid-cols-1 gap-2 p-3 bg-gray-50 rounded-lg">
+                <Button
+                  variant={activeTab === "overview" ? "default" : "ghost"}
+                  onClick={() => { setActiveTab("overview"); setShowTabMenu(false) }}
+                  className="w-full justify-start h-10"
+                >
+                  功能概览
+                </Button>
+                <Button
+                  variant={activeTab === "quickstart" ? "default" : "ghost"}
+                  onClick={() => { setActiveTab("quickstart"); setShowTabMenu(false) }}
+                  className="w-full justify-start h-10"
+                >
+                  快速入门
+                </Button>
+                <Button
+                  variant={activeTab === "permissions" ? "default" : "ghost"}
+                  onClick={() => { setActiveTab("permissions"); setShowTabMenu(false) }}
+                  className="w-full justify-start h-10"
+                >
+                  权限说明
+                </Button>
+                <Button
+                  variant={activeTab === "faq" ? "default" : "ghost"}
+                  onClick={() => { setActiveTab("faq"); setShowTabMenu(false) }}
+                  className="w-full justify-start h-10"
+                >
+                  常见问题
+                </Button>
+                <Button
+                  variant={activeTab === "tips" ? "default" : "ghost"}
+                  onClick={() => { setActiveTab("tips"); setShowTabMenu(false) }}
+                  className="w-full justify-start h-10"
+                >
+                  操作技巧
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          // 桌面端：保持原有Tab布局
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">功能概览</TabsTrigger>
+            <TabsTrigger value="quickstart">快速入门</TabsTrigger>
+            <TabsTrigger value="permissions">权限说明</TabsTrigger>
+            <TabsTrigger value="faq">常见问题</TabsTrigger>
+            <TabsTrigger value="tips">操作技巧</TabsTrigger>
+          </TabsList>
+        )}
 
         {/* 功能概览 */}
         <TabsContent value="overview" className="mt-6">
@@ -704,23 +779,23 @@ export default function OperationGuide() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                   {currentModule.subModules.map((subModule, index) => {
                     const hasAccess = hasModuleAccess(selectedModule, subModule.key)
                     return (
-                      <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <h4 className="font-semibold text-gray-800 mb-2">{subModule.name}</h4>
-                        <p className="text-sm text-gray-600 mb-3">{subModule.description}</p>
+                      <div key={index} className={`border rounded-lg hover:shadow-md transition-shadow ${isMobile ? 'p-4' : 'p-4'}`}>
+                        <h4 className={`font-semibold text-gray-800 mb-2 ${isMobile ? 'text-base' : 'text-sm'}`}>{subModule.name}</h4>
+                        <p className={`text-gray-600 mb-3 ${isMobile ? 'text-sm' : 'text-sm'}`}>{subModule.description}</p>
                         <div className="flex items-center gap-2">
                           {hasAccess ? (
                             <>
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span className="text-xs text-green-600">您有此功能的访问权限</span>
+                              <CheckCircle className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} text-green-500`} />
+                              <span className={`text-green-600 ${isMobile ? 'text-sm' : 'text-xs'}`}>您有此功能的访问权限</span>
                             </>
                           ) : (
                             <>
-                              <XCircle className="h-4 w-4 text-red-500" />
-                              <span className="text-xs text-red-600">您暂无此功能的访问权限</span>
+                              <XCircle className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'} text-red-500`} />
+                              <span className={`text-red-600 ${isMobile ? 'text-sm' : 'text-xs'}`}>您暂无此功能的访问权限</span>
                             </>
                           )}
                         </div>
@@ -739,48 +814,53 @@ export default function OperationGuide() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                        1
+                <div className={`bg-gray-50 p-4 rounded-lg ${isMobile ? '' : ''}`}>
+                  <div className={`flex items-center ${isMobile ? 'flex-col space-y-4' : 'justify-between'}`}>
+                    <div className={`flex items-center ${isMobile ? 'w-full justify-center' : 'gap-4'}`}>
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'w-12 h-12' : 'w-10 h-10'} bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold ${isMobile ? 'text-base' : 'text-sm'}`}>
+                          1
+                        </div>
+                        <p className={`${isMobile ? 'text-sm' : 'text-xs'} mt-1`}>项目创建</p>
                       </div>
-                      <p className="text-xs mt-1">项目创建</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                        2
+                      {!isMobile && <ArrowRight className="h-4 w-4 text-gray-400" />}
+                      {isMobile && <ArrowRight className="h-5 w-5 text-gray-400 rotate-90" />}
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'w-12 h-12' : 'w-10 h-10'} bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold ${isMobile ? 'text-base' : 'text-sm'}`}>
+                          2
+                        </div>
+                        <p className={`${isMobile ? 'text-sm' : 'text-xs'} mt-1`}>审批评审</p>
                       </div>
-                      <p className="text-xs mt-1">审批评审</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                        3
+                      {!isMobile && <ArrowRight className="h-4 w-4 text-gray-400" />}
+                      {isMobile && <ArrowRight className="h-5 w-5 text-gray-400 rotate-90" />}
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'w-12 h-12' : 'w-10 h-10'} bg-green-100 text-green-600 rounded-full flex items-center justify-center font-semibold ${isMobile ? 'text-base' : 'text-sm'}`}>
+                          3
+                        </div>
+                        <p className={`${isMobile ? 'text-sm' : 'text-xs'} mt-1`}>计划下达</p>
                       </div>
-                      <p className="text-xs mt-1">计划下达</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                        4
+                      {!isMobile && <ArrowRight className="h-4 w-4 text-gray-400" />}
+                      {isMobile && <ArrowRight className="h-5 w-5 text-gray-400 rotate-90" />}
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'w-12 h-12' : 'w-10 h-10'} bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold ${isMobile ? 'text-base' : 'text-sm'}`}>
+                          4
+                        </div>
+                        <p className={`${isMobile ? 'text-sm' : 'text-xs'} mt-1`}>执行结算</p>
                       </div>
-                      <p className="text-xs mt-1">执行结算</p>
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
+                <div className={`mt-4 grid gap-4 text-sm ${isMobile ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-4'}`}>
+                  <div className={isMobile ? 'p-3 bg-white rounded-lg border' : ''}>
                     <strong>编制阶段：</strong>创建项目、完善信息、提交审批
                   </div>
-                  <div>
+                  <div className={isMobile ? 'p-3 bg-white rounded-lg border' : ''}>
                     <strong>评审阶段：</strong>月度评审、批复报告、三步确认
                   </div>
-                  <div>
+                  <div className={isMobile ? 'p-3 bg-white rounded-lg border' : ''}>
                     <strong>批复阶段：</strong>综合计划、项目下达、合同绑定
                   </div>
-                  <div>
+                  <div className={isMobile ? 'p-3 bg-white rounded-lg border' : ''}>
                     <strong>执行阶段：</strong>进度报销、开票回款、项目结算
                   </div>
                 </div>
@@ -844,7 +924,7 @@ export default function OperationGuide() {
 
         {/* 权限说明 */}
         <TabsContent value="permissions" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -856,12 +936,12 @@ export default function OperationGuide() {
                 <Badge className={`${roleConfig?.color} mb-4`}>
                   {roleConfig?.name}
                 </Badge>
-                <p className="text-sm text-gray-600 mb-4">{roleConfig?.description}</p>
+                <p className={`text-gray-600 mb-4 ${isMobile ? 'text-sm' : 'text-sm'}`}>{roleConfig?.description}</p>
                 <div className="space-y-3">
                   {roleConfig?.permissions.map((permission, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span className="text-sm font-medium">{permission}</span>
+                    <div key={index} className={`flex items-center gap-3 p-3 bg-gray-50 rounded-lg ${isMobile ? 'p-4' : ''}`}>
+                      <CheckCircle className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-green-500 flex-shrink-0`} />
+                      <span className={`font-medium ${isMobile ? 'text-sm' : 'text-sm'}`}>{permission}</span>
                     </div>
                   ))}
                 </div>
@@ -876,7 +956,8 @@ export default function OperationGuide() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-96">
+                {isMobile ? (
+                  // 移动端：卡片式布局，无需滚动区域
                   <div className="space-y-4">
                     {Object.entries(ROLE_PERMISSIONS).map(([role, config]) => (
                       <div key={role} className={`border rounded-lg p-4 ${role === currentRole ? 'border-blue-200 bg-blue-50' : ''}`}>
@@ -884,10 +965,10 @@ export default function OperationGuide() {
                           {config.name}
                         </Badge>
                         <p className="text-sm text-gray-600 mt-2 mb-3">{config.description}</p>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {config.permissions.slice(0, 3).map((permission, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                            <div key={index} className="flex items-start gap-2">
+                              <div className="w-2 h-2 bg-gray-300 rounded-full mt-2 flex-shrink-0"></div>
                               <span className="text-sm text-gray-600">{permission}</span>
                             </div>
                           ))}
@@ -900,7 +981,34 @@ export default function OperationGuide() {
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
+                ) : (
+                  // 桌面端：保持原有滚动区域
+                  <ScrollArea className="h-96">
+                    <div className="space-y-4">
+                      {Object.entries(ROLE_PERMISSIONS).map(([role, config]) => (
+                        <div key={role} className={`border rounded-lg p-4 ${role === currentRole ? 'border-blue-200 bg-blue-50' : ''}`}>
+                          <Badge className={config.color}>
+                            {config.name}
+                          </Badge>
+                          <p className="text-sm text-gray-600 mt-2 mb-3">{config.description}</p>
+                          <div className="space-y-1">
+                            {config.permissions.slice(0, 3).map((permission, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                                <span className="text-sm text-gray-600">{permission}</span>
+                              </div>
+                            ))}
+                            {config.permissions.length > 3 && (
+                              <div className="text-xs text-gray-500 ml-4">
+                                等共 {config.permissions.length} 项权限
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -927,17 +1035,17 @@ export default function OperationGuide() {
                 <CardContent>
                   <div className="space-y-4">
                     {FAQ_DATA[selectedModule as keyof typeof FAQ_DATA]?.map((item, itemIndex) => (
-                      <div key={itemIndex} className="border-l-4 border-blue-200 pl-4 py-2">
-                        <h4 className="font-semibold text-gray-800 mb-2">{item.q}</h4>
-                        <p className="text-gray-700 text-sm mb-2">{item.a}</p>
-                        <div className="flex gap-2">
+                      <div key={itemIndex} className={`border-l-4 border-blue-200 pl-4 py-2 ${isMobile ? 'py-4' : ''}`}>
+                        <h4 className={`font-semibold text-gray-800 mb-2 ${isMobile ? 'text-base' : ''}`}>{item.q}</h4>
+                        <p className={`text-gray-700 mb-2 ${isMobile ? 'text-sm leading-relaxed' : 'text-sm'}`}>{item.a}</p>
+                        <div className={`flex gap-2 ${isMobile ? 'flex-wrap' : ''}`}>
                           {Array.isArray(item.roles) ? 
                             item.roles.map((role, roleIndex) => (
-                              <Badge key={roleIndex} variant="outline" className="text-xs">
+                              <Badge key={roleIndex} variant="outline" className={isMobile ? 'text-xs' : 'text-xs'}>
                                 {role}
                               </Badge>
                             )) :
-                            <Badge variant="outline" className="text-xs">{item.roles}</Badge>
+                            <Badge variant="outline" className={isMobile ? 'text-xs' : 'text-xs'}>{item.roles}</Badge>
                           }
                         </div>
                       </div>
@@ -980,9 +1088,9 @@ export default function OperationGuide() {
                 <CardContent>
                   <div className="space-y-3">
                     {OPERATION_TIPS[selectedModule as keyof typeof OPERATION_TIPS]?.map((tip, tipIndex) => (
-                      <Alert key={tipIndex}>
-                        <Lightbulb className="h-4 w-4" />
-                        <AlertDescription className="text-sm">
+                      <Alert key={tipIndex} className={isMobile ? 'p-4' : ''}>
+                        <Lightbulb className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                        <AlertDescription className={`${isMobile ? 'text-sm leading-relaxed' : 'text-sm'}`}>
                           {tip}
                         </AlertDescription>
                       </Alert>
