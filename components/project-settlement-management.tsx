@@ -309,173 +309,272 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
           <CardDescription>按状态筛选查看合同收款情况</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={filter} onValueChange={(value: any) => setFilter(value)} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="all">全部合同</TabsTrigger>
-              <TabsTrigger value="paid">✅ 已回款</TabsTrigger>
-              <TabsTrigger value="partial_payment">⚠ 部分回款</TabsTrigger>
-              <TabsTrigger value="pending_payment">⌛ 待回款</TabsTrigger>
-              <TabsTrigger value="overdue_serious">🚨 严重逾期</TabsTrigger>
-            </TabsList>
-
-            <div className="mt-4 flex items-center space-x-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="搜索合同编号、名称或客户..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <TabsContent value={filter} className="mt-4">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => handleSort('contractCode')}
-                          className="h-auto p-0 font-medium"
+          {isMobile ? (
+            // 移动端：直接显示所有合同，无筛选
+            <div className="h-[400px] w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="space-y-4">
+                {settlements.map((settlement) => (
+                  <div key={settlement.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto text-blue-600 font-medium text-sm"
+                        onClick={() => handleViewDetail(settlement)}
+                      >
+                        {settlement.contractCode}
+                      </Button>
+                      {getStatusBadge(settlement.status)}
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">客户名称:</span>
+                        <span className="font-medium">{settlement.clientName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">合同金额:</span>
+                        <span className="font-medium">{formatAmount(settlement.contractAmount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">实际回款:</span>
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto text-green-600 font-medium text-sm"
+                          onClick={() => handleEditPayment(settlement)}
                         >
-                          合同编号 <ArrowUpDown className="ml-1 h-3 w-3" />
+                          {formatAmount(settlement.totalPaidAmount)}
                         </Button>
-                      </TableHead>
-                      <TableHead>客户名称</TableHead>
-                      <TableHead className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => handleSort('contractAmount')}
-                          className="h-auto p-0 font-medium"
-                        >
-                          合同金额 <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => handleSort('lastInvoiceDate')}
-                          className="h-auto p-0 font-medium"
-                        >
-                          最近开票 <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-right">应回款金额</TableHead>
-                      <TableHead className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => handleSort('totalPaidAmount')}
-                          className="h-auto p-0 font-medium"
-                        >
-                          实际回款 <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => handleSort('remainingAmount')}
-                          className="h-auto p-0 font-medium"
-                        >
-                          欠款差额 <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>状态</TableHead>
-                      <TableHead>操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAndSortedSettlements.map((settlement) => (
-                      <TableRow key={settlement.id}>
-                        <TableCell className="font-medium">
-                          <Button
-                            variant="link"
-                            className="p-0 h-auto text-blue-600"
-                            onClick={() => handleViewDetail(settlement)}
-                          >
-                            {settlement.contractCode}
-                          </Button>
-                        </TableCell>
-                        <TableCell>{settlement.clientName}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatAmount(settlement.contractAmount)}
-                        </TableCell>
-                        <TableCell>
-                          {settlement.lastInvoiceDate ? (
-                            <div className={`text-sm ${settlement.overdueDays && settlement.overdueDays > 15 ? 'text-red-600 font-medium' : ''}`}>
-                              {settlement.lastInvoiceDate}
-                              {settlement.overdueDays && settlement.overdueDays > 0 && (
-                                <div className="text-xs text-gray-500">
-                                  {settlement.overdueDays}天前
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">未开票</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatAmount(settlement.totalInvoiceAmount)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="link"
-                            className="p-0 h-auto text-green-600 font-medium"
-                            onClick={() => handleEditPayment(settlement)}
-                          >
-                            {formatAmount(settlement.totalPaidAmount)}
-                          </Button>
-                        </TableCell>
-                        <TableCell className={`text-right font-medium ${settlement.remainingAmount < 0 ? 'text-red-600' : ''}`}>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">欠款差额:</span>
+                        <span className={`font-medium ${settlement.remainingAmount < 0 ? 'text-red-600' : ''}`}>
                           {formatAmount(settlement.remainingAmount)}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(settlement.status)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewDetail(settlement)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            {settlement.status === 'pending_payment' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleSendNotice(settlement)}
-                                className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                              >
-                                <Mail className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {currentUser.department === '财务部' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditPayment(settlement)}
-                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
+                        </span>
+                      </div>
+                      {settlement.lastInvoiceDate && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">最近开票:</span>
+                          <div className={`text-sm ${settlement.overdueDays && settlement.overdueDays > 15 ? 'text-red-600 font-medium' : ''}`}>
+                            {settlement.lastInvoiceDate}
+                            {settlement.overdueDays && settlement.overdueDays > 0 && (
+                              <span className="text-xs text-gray-500 ml-1">
+                                ({settlement.overdueDays}天前)
+                              </span>
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetail(settlement)}
+                          className="text-xs"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          详情
+                        </Button>
+                        {settlement.status === 'pending_payment' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSendNotice(settlement)}
+                            className="text-orange-600 border-orange-200 hover:bg-orange-50 text-xs"
+                          >
+                            <Mail className="h-3 w-3 mr-1" />
+                            催收
+                          </Button>
+                        )}
+                      </div>
+                      {currentUser.department === '财务部' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditPayment(settlement)}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs"
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          修改
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          ) : (
+            // 桌面端：使用Tabs进行筛选
+            <Tabs value={filter} onValueChange={(value: any) => setFilter(value)} className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="all">全部合同</TabsTrigger>
+                <TabsTrigger value="paid">✅ 已回款</TabsTrigger>
+                <TabsTrigger value="partial_payment">⚠ 部分回款</TabsTrigger>
+                <TabsTrigger value="pending_payment">⌛ 待回款</TabsTrigger>
+                <TabsTrigger value="overdue_serious">🚨 严重逾期</TabsTrigger>
+              </TabsList>
+              
+              <div className="mt-4 flex items-center space-x-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="搜索合同编号、名称或客户..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <TabsContent value={filter} className="mt-4">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => handleSort('contractCode')}
+                            className="h-auto p-0 font-medium"
+                          >
+                            合同编号 <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead>客户名称</TableHead>
+                        <TableHead className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => handleSort('contractAmount')}
+                            className="h-auto p-0 font-medium"
+                          >
+                            合同金额 <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => handleSort('lastInvoiceDate')}
+                            className="h-auto p-0 font-medium"
+                          >
+                            最近开票 <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead className="text-right">应回款金额</TableHead>
+                        <TableHead className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => handleSort('totalPaidAmount')}
+                            className="h-auto p-0 font-medium"
+                          >
+                            实际回款 <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => handleSort('remainingAmount')}
+                            className="h-auto p-0 font-medium"
+                          >
+                            欠款差额 <ArrowUpDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead>操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAndSortedSettlements.map((settlement) => (
+                        <TableRow key={settlement.id}>
+                          <TableCell className="font-medium">
+                            <Button
+                              variant="link"
+                              className="p-0 h-auto text-blue-600"
+                              onClick={() => handleViewDetail(settlement)}
+                            >
+                              {settlement.contractCode}
+                            </Button>
+                          </TableCell>
+                          <TableCell>{settlement.clientName}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatAmount(settlement.contractAmount)}
+                          </TableCell>
+                          <TableCell>
+                            {settlement.lastInvoiceDate ? (
+                              <div className={`text-sm ${settlement.overdueDays && settlement.overdueDays > 15 ? 'text-red-600 font-medium' : ''}`}>
+                                {settlement.lastInvoiceDate}
+                                {settlement.overdueDays && settlement.overdueDays > 0 && (
+                                  <div className="text-xs text-gray-500">
+                                    {settlement.overdueDays}天前
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">未开票</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatAmount(settlement.totalInvoiceAmount)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="link"
+                              className="p-0 h-auto text-green-600 font-medium"
+                              onClick={() => handleEditPayment(settlement)}
+                            >
+                              {formatAmount(settlement.totalPaidAmount)}
+                            </Button>
+                          </TableCell>
+                          <TableCell className={`text-right font-medium ${settlement.remainingAmount < 0 ? 'text-red-600' : ''}`}>
+                            {formatAmount(settlement.remainingAmount)}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(settlement.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewDetail(settlement)}
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              {settlement.status === 'pending_payment' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleSendNotice(settlement)}
+                                  className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                                >
+                                  <Mail className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {currentUser.department === '财务部' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditPayment(settlement)}
+                                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
 
       {/* 回款金额修改对话框 */}
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent>
+        <DialogContent className={cn(isMobile ? "max-w-[95vw] h-[90vh]" : "")}>
           <DialogHeader>
             <DialogTitle>修改回款金额</DialogTitle>
             <DialogDescription>
@@ -483,7 +582,7 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className={cn("gap-4 text-sm", isMobile ? "grid grid-cols-1 space-y-3" : "grid grid-cols-2")}>
               <div>
                 <Label className="text-gray-600">合同金额:</Label>
                 <p className="font-medium">{selectedSettlement && formatAmount(selectedSettlement.contractAmount)}</p>
@@ -525,78 +624,150 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
 
       {/* 详情查看对话框 */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className={cn(isMobile ? "max-w-[95vw] h-[90vh]" : "max-w-4xl max-h-[80vh]")}>
           <DialogHeader>
             <DialogTitle>合同收款详情</DialogTitle>
             <DialogDescription>
               {selectedSettlement?.contractCode} - {selectedSettlement?.contractName}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            {selectedSettlement && (
-              <div className="space-y-6">
-                {/* 基本信息 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">客户名称</Label>
-                    <p className="mt-1 text-sm">{selectedSettlement.clientName}</p>
+          {isMobile ? (
+            <div className="h-[70vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {selectedSettlement && (
+                <div className="space-y-6">
+                  {/* 基本信息 */}
+                  <div className="grid grid-cols-1 space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">客户名称</Label>
+                      <p className="mt-1 text-sm">{selectedSettlement.clientName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">合同状态</Label>
+                      <div className="mt-1">{getStatusBadge(selectedSettlement.status)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">合同金额</Label>
+                      <p className="mt-1 text-sm font-medium">{formatAmount(selectedSettlement.contractAmount)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">回款进度</Label>
+                      <p className="mt-1 text-sm">
+                        {((selectedSettlement.totalPaidAmount / selectedSettlement.contractAmount) * 100).toFixed(1)}%
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">合同状态</Label>
-                    <div className="mt-1">{getStatusBadge(selectedSettlement.status)}</div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">合同金额</Label>
-                    <p className="mt-1 text-sm font-medium">{formatAmount(selectedSettlement.contractAmount)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">回款进度</Label>
-                    <p className="mt-1 text-sm">
-                      {((selectedSettlement.totalPaidAmount / selectedSettlement.contractAmount) * 100).toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
 
-                {/* 回款记录 */}
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-3 block">回款记录</Label>
-                  {paymentRecords.length > 0 ? (
-                    <div className="border rounded-lg">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>回款日期</TableHead>
-                            <TableHead>回款金额</TableHead>
-                            <TableHead>回款方式</TableHead>
-                            <TableHead>备注</TableHead>
-                            <TableHead>记录人</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paymentRecords.map((record) => (
-                            <TableRow key={record.id}>
-                              <TableCell>{record.paymentDate}</TableCell>
-                              <TableCell className="font-medium text-green-600">
-                                {formatAmount(record.amount)}
-                              </TableCell>
-                              <TableCell>{record.paymentMethod}</TableCell>
-                              <TableCell>{record.remarks}</TableCell>
-                              <TableCell>{record.recordedBy}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500 border rounded-lg">
-                      <FileText className="h-8 w-8 mx-auto mb-2" />
-                      <p>暂无回款记录</p>
-                    </div>
-                  )}
+                  {/* 回款记录 */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-3 block">回款记录</Label>
+                    {paymentRecords.length > 0 ? (
+                      <div className="space-y-3">
+                        {paymentRecords.map((record) => (
+                          <div key={record.id} className="border rounded-lg p-3 bg-gray-50">
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">回款日期:</span>
+                                <span className="font-medium">{record.paymentDate}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">回款金额:</span>
+                                <span className="font-medium text-green-600">{formatAmount(record.amount)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">回款方式:</span>
+                                <span className="font-medium">{record.paymentMethod}</span>
+                              </div>
+                              {record.remarks && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">备注:</span>
+                                  <span className="font-medium">{record.remarks}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">记录人:</span>
+                                <span className="font-medium">{record.recordedBy}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 border rounded-lg">
+                        <FileText className="h-8 w-8 mx-auto mb-2" />
+                        <p>暂无回款记录</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </ScrollArea>
+              )}
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[60vh]">
+              {selectedSettlement && (
+                <div className="space-y-6">
+                  {/* 基本信息 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">客户名称</Label>
+                      <p className="mt-1 text-sm">{selectedSettlement.clientName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">合同状态</Label>
+                      <div className="mt-1">{getStatusBadge(selectedSettlement.status)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">合同金额</Label>
+                      <p className="mt-1 text-sm font-medium">{formatAmount(selectedSettlement.contractAmount)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">回款进度</Label>
+                      <p className="mt-1 text-sm">
+                        {((selectedSettlement.totalPaidAmount / selectedSettlement.contractAmount) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 回款记录 */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-3 block">回款记录</Label>
+                    {paymentRecords.length > 0 ? (
+                      <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>回款日期</TableHead>
+                              <TableHead>回款金额</TableHead>
+                              <TableHead>回款方式</TableHead>
+                              <TableHead>备注</TableHead>
+                              <TableHead>记录人</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paymentRecords.map((record) => (
+                              <TableRow key={record.id}>
+                                <TableCell>{record.paymentDate}</TableCell>
+                                <TableCell className="font-medium text-green-600">
+                                  {formatAmount(record.amount)}
+                                </TableCell>
+                                <TableCell>{record.paymentMethod}</TableCell>
+                                <TableCell>{record.remarks}</TableCell>
+                                <TableCell>{record.recordedBy}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 border rounded-lg">
+                        <FileText className="h-8 w-8 mx-auto mb-2" />
+                        <p>暂无回款记录</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
               关闭
