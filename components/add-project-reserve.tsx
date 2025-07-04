@@ -857,7 +857,14 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
                 </SelectTrigger>
                 <SelectContent>
                   {availableLeaders.map((leader) => (
-                    <SelectItem key={leader.id} value={leader.name}>{leader.name}</SelectItem>
+                    <SelectItem key={leader.id} value={leader.name}>
+                      <div className="flex flex-col py-1">
+                        <span className="font-medium">{leader.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {leader.role} - {leader.center || ""}
+                        </span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -908,7 +915,12 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
                 <SelectContent>
                   {getAvailableApprovers(currentUser.department || '', currentUser.center || '').map((approver) => (
                     <SelectItem key={approver.id} value={approver.name}>
-                      {approver.name}
+                      <div className="flex flex-col py-1">
+                        <span className="font-medium">{approver.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {approver.role} - {approver.center || approver.department}
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

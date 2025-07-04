@@ -1055,8 +1055,20 @@ function ReserveProjectManagementWithParams() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
-              当前用户: {currentUser.name} ({currentUser.role} - {currentUser.center || currentUser.department})
+            {/* 移动端：简化显示，桌面端：完整显示 */}
+            <span className={cn(
+              "text-gray-600",
+              isMobile ? "text-xs" : "text-xs sm:text-sm",
+              isMobile ? "block" : "hidden sm:inline"
+            )}>
+              {isMobile ? (
+                <div className="text-center">
+                  <div className="font-medium">{currentUser.name}</div>
+                  <div className="text-xs text-gray-500">{currentUser.role}</div>
+                </div>
+              ) : (
+                `当前用户: ${currentUser.name} (${currentUser.role} - ${currentUser.center || currentUser.department})`
+              )}
             </span>
             <Select
               value={currentUser.id}
@@ -1073,7 +1085,18 @@ function ReserveProjectManagementWithParams() {
               <SelectContent>
                 {mockUsers.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name} ({user.center || user.department})
+                    <div className={cn(
+                      "flex flex-col",
+                      isMobile ? "py-1" : ""
+                    )}>
+                      <span className="font-medium">{user.name}</span>
+                      <span className={cn(
+                        "text-muted-foreground",
+                        isMobile ? "text-xs" : "text-sm"
+                      )}>
+                        {user.role} - {user.center || user.department}
+                      </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -2363,7 +2386,20 @@ function ReserveProjectManagementWithParams() {
                         </SelectTrigger>
                         <SelectContent>
                           {getAvailableLeaders(currentUser).map((leader) => (
-                            <SelectItem key={leader.id} value={leader.name}>{leader.name}</SelectItem>
+                            <SelectItem key={leader.id} value={leader.name}>
+                              <div className={cn(
+                                "flex flex-col",
+                                isMobile ? "py-1" : ""
+                              )}>
+                                <span className="font-medium">{leader.name}</span>
+                                <span className={cn(
+                                  "text-muted-foreground",
+                                  isMobile ? "text-xs" : "text-sm"
+                                )}>
+                                  {leader.role} - {leader.center || ""}
+                                </span>
+                              </div>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -2639,7 +2675,18 @@ function ReserveProjectManagementWithParams() {
                   <SelectContent>
                     {getAvailableApprovers(currentUser.department, currentUser.center).map((user) => (
                       <SelectItem key={user.id} value={user.name}>
-                        {user.name} ({user.role})
+                        <div className={cn(
+                          "flex flex-col",
+                          isMobile ? "py-1" : ""
+                        )}>
+                          <span className="font-medium">{user.name}</span>
+                          <span className={cn(
+                            "text-muted-foreground",
+                            isMobile ? "text-xs" : "text-sm"
+                          )}>
+                            {user.role} - {user.center || user.department}
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
