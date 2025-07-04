@@ -25,7 +25,10 @@ import {
   Edit,
   RefreshCw,
   ArrowUpDown,
-  FileText
+  FileText,
+  ChevronUp,
+  ChevronDown,
+  Filter
 } from 'lucide-react'
 
 import {
@@ -53,6 +56,7 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState<keyof ProjectSettlement>('contractCode')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [showSummary, setShowSummary] = useState(true)
 
   // 对话框状态
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
@@ -248,57 +252,120 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
 
       {/* 全局概览卡片 */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">累计合同金额</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatAmount(summary.totalContractAmount)}</div>
-              <p className="text-xs text-muted-foreground">总计 {settlements.length} 个合同</p>
-            </CardContent>
-          </Card>
+        <div className="mb-4">
+          {isMobile ? (
+            // 移动端：可折叠的紧凑卡片
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSummary(!showSummary)}
+                className="w-full flex items-center justify-between h-10 mb-3"
+              >
+                <span className="flex items-center text-sm font-medium">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  数据概览
+                </span>
+                {showSummary ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              
+              {showSummary && (
+                <div className="grid grid-cols-2 gap-3">
+                  <Card className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">累计合同</span>
+                      <DollarSign className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <div className="text-lg font-bold">{formatAmount(summary.totalContractAmount)}</div>
+                    <p className="text-xs text-muted-foreground">{settlements.length} 个合同</p>
+                  </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">已回款总额</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatAmount(summary.totalPaidAmount)}</div>
-              <div className="flex items-center text-xs text-muted-foreground">
-                本月: {formatAmount(summary.currentMonthPaid)} 
-                <span className="ml-2">{formatGrowthRate(summary.growthRate)}</span>
-              </div>
-            </CardContent>
-          </Card>
+                  <Card className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">已回款</span>
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                    </div>
+                    <div className="text-lg font-bold text-green-600">{formatAmount(summary.totalPaidAmount)}</div>
+                    <p className="text-xs text-muted-foreground">本月: {formatAmount(summary.currentMonthPaid)}</p>
+                  </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">逾期账款金额</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{formatAmount(summary.overdueAmount)}</div>
-              <p className="text-xs text-muted-foreground">超期≥30天 {summary.overdueCount} 个合同</p>
-            </CardContent>
-          </Card>
+                  <Card className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">逾期账款</span>
+                      <AlertTriangle className="h-3 w-3 text-red-600" />
+                    </div>
+                    <div className="text-lg font-bold text-red-600">{formatAmount(summary.overdueAmount)}</div>
+                    <p className="text-xs text-muted-foreground">{summary.overdueCount} 个合同</p>
+                  </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">回款完成率</CardTitle>
-              <CheckCircle className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {((summary.totalPaidAmount / summary.totalContractAmount) * 100).toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground">
-                已回款 {summary.paidContractCount} / 部分 {summary.partialPaidCount} / 待收 {summary.pendingCount}
-              </p>
-            </CardContent>
-          </Card>
+                  <Card className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">完成率</span>
+                      <CheckCircle className="h-3 w-3 text-blue-600" />
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {((summary.totalPaidAmount / summary.totalContractAmount) * 100).toFixed(1)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">已回款 {summary.paidContractCount}</p>
+                  </Card>
+                </div>
+              )}
+            </div>
+          ) : (
+            // 桌面端：保持原有布局
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">累计合同金额</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatAmount(summary.totalContractAmount)}</div>
+                  <p className="text-xs text-muted-foreground">总计 {settlements.length} 个合同</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">已回款总额</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{formatAmount(summary.totalPaidAmount)}</div>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    本月: {formatAmount(summary.currentMonthPaid)} 
+                    <span className="ml-2">{formatGrowthRate(summary.growthRate)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">逾期账款金额</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{formatAmount(summary.overdueAmount)}</div>
+                  <p className="text-xs text-muted-foreground">超期≥30天 {summary.overdueCount} 个合同</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">回款完成率</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {((summary.totalPaidAmount / summary.totalContractAmount) * 100).toFixed(1)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    已回款 {summary.paidContractCount} / 部分 {summary.partialPaidCount} / 待收 {summary.pendingCount}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       )}
 
@@ -310,10 +377,23 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
         </CardHeader>
         <CardContent>
           {isMobile ? (
-            // 移动端：直接显示所有合同，无筛选
-            <div className="h-[400px] w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="space-y-4">
-                {settlements.map((settlement) => (
+            // 移动端：添加简洁的筛选功能
+            <div>
+              <div className="mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilter(filter === 'all' ? 'pending_payment' : 'all')}
+                  className="w-full flex items-center justify-center h-10"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {filter === 'all' ? '显示全部合同' : '仅显示待回款'}
+                </Button>
+              </div>
+              
+              <div className="h-[350px] w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="space-y-4">
+                  {filteredAndSortedSettlements.map((settlement) => (
                   <div key={settlement.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       <Button
@@ -402,7 +482,8 @@ export default function ProjectSettlementManagement({ currentUser }: ProjectSett
                       )}
                     </div>
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
