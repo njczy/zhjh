@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
 import { 
   BookOpen, 
   Users, 
@@ -567,6 +568,12 @@ export default function OperationGuide() {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedModule, setSelectedModule] = useState("reserve")
   const [showTabMenu, setShowTabMenu] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // 防止服务端渲染水合不匹配
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   
   const currentRole = currentUser?.role || "中心专职"
   const roleConfig = ROLE_PERMISSIONS[currentRole as keyof typeof ROLE_PERMISSIONS]
@@ -621,6 +628,25 @@ export default function OperationGuide() {
                currentUser.role === "分管院领导"
     }
     return false
+  }
+
+  // 在水合完成前使用默认样式
+  if (!mounted) {
+    return (
+      <div className="mx-auto max-w-6xl p-6">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <BookOpen className="h-8 w-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900">运营管控平台操作说明</h1>
+          </div>
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
+            <div className="flex items-center justify-center py-8">
+              <div className="text-gray-500">加载中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -704,11 +730,11 @@ export default function OperationGuide() {
             >
               <span className="flex items-center">
                 <Menu className="h-4 w-4 mr-2" />
-                {activeTab === "overview" && "功能概览"}
-                {activeTab === "quickstart" && "快速入门"}
-                {activeTab === "permissions" && "权限说明"}
-                {activeTab === "faq" && "常见问题"}
-                {activeTab === "tips" && "操作技巧"}
+                {activeTab === "overview" ? "功能概览" :
+                 activeTab === "quickstart" ? "快速入门" :
+                 activeTab === "permissions" ? "权限说明" :
+                 activeTab === "faq" ? "常见问题" :
+                 activeTab === "tips" ? "操作技巧" : "功能概览"}
               </span>
               {showTabMenu ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
