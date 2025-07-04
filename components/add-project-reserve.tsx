@@ -852,15 +852,35 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
             <div className="space-y-2">
               <Label>部门/中心负责人</Label>
               <Select value={departmentHead} onValueChange={setDepartmentHead}>
-                <SelectTrigger className="w-[12rem]">
-                  <SelectValue placeholder="请选择负责人" />
+                <SelectTrigger className={cn(
+                  isMobile ? "w-[6rem] h-8 py-1 px-2" : "w-[8rem]"
+                )}>
+                  <SelectValue placeholder="请选择负责人">
+                    {departmentHead}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="[&_[data-radix-select-item-indicator]]:hidden">
                   {availableLeaders.map((leader) => (
-                    <SelectItem key={leader.id} value={leader.name}>
-                      <div className="flex flex-col py-1">
-                        <span className="font-medium">{leader.name}</span>
-                        <span className="text-xs text-muted-foreground">
+                    <SelectItem 
+                      key={leader.id} 
+                      value={leader.name}
+                      className={cn(
+                        isMobile ? "!py-2 !px-3 !min-h-0" : "",
+                        "[&>span[data-radix-select-item-indicator]]:hidden [&>span>svg]:hidden"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex flex-col",
+                        isMobile ? "py-0 gap-0.5" : "py-1"
+                      )}>
+                        <span className={cn(
+                          "font-medium",
+                          isMobile ? "leading-tight text-sm" : "leading-tight"
+                        )}>{leader.name}</span>
+                        <span className={cn(
+                          "text-xs text-muted-foreground",
+                          isMobile ? "leading-tight" : "leading-tight"
+                        )}>
                           {leader.role} - {leader.center || ""}
                         </span>
                       </div>
@@ -901,23 +921,49 @@ export default function AddProjectReserve({ onBack, currentUser }: AddProjectRes
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="approver" className="text-right">
+            <div className={cn(
+              "items-center gap-4",
+              isMobile ? "flex flex-row" : "grid grid-cols-4"
+            )}>
+              <Label htmlFor="approver" className={cn(
+                "whitespace-nowrap",
+                isMobile ? "text-left flex-shrink-0" : "text-right"
+              )}>
                 审批人
               </Label>
               <Select
                 value={selectedApprover}
                 onValueChange={setSelectedApprover}
               >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="选择审批人" />
+                <SelectTrigger className={cn(
+                  isMobile ? "w-[100px] h-8 py-1 px-2" : "col-span-2"
+                )}>
+                  <SelectValue placeholder="选择审批人">
+                    {selectedApprover}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="[&_[data-radix-select-item-indicator]]:hidden">
                   {getAvailableApprovers(currentUser.department || '', currentUser.center || '').map((approver) => (
-                    <SelectItem key={approver.id} value={approver.name}>
-                      <div className="flex flex-col py-1">
-                        <span className="font-medium">{approver.name}</span>
-                        <span className="text-xs text-muted-foreground">
+                    <SelectItem 
+                      key={approver.id} 
+                      value={approver.name}
+                      className={cn(
+                        isMobile ? "!py-2 !px-3 !min-h-0" : "",
+                        "[&>span[data-radix-select-item-indicator]]:hidden [&>span>svg]:hidden"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex flex-col",
+                        isMobile ? "py-0 gap-0.5" : "py-1"
+                      )}>
+                        <span className={cn(
+                          "font-medium",
+                          isMobile ? "leading-tight text-sm" : "leading-tight"
+                        )}>{approver.name}</span>
+                        <span className={cn(
+                          "text-xs text-muted-foreground",
+                          isMobile ? "leading-tight" : "leading-tight"
+                        )}>
                           {approver.role} - {approver.center || approver.department}
                         </span>
                       </div>

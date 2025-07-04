@@ -3,7 +3,7 @@
 import type React from "react"
 import { Eye, ListFilter, CalendarCheck, ChevronLeft, ChevronRight, ClipboardCheck, Menu, X } from "lucide-react" // Declare the Eye variable
 
-import { useEffect, useState, useMemo, Suspense, useRef } from "react"
+import { useEffect, useState, useMemo, Suspense, useRef, useCallback } from "react"
 import Link from "next/link"
 import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
@@ -47,6 +47,7 @@ import {
   mockUsers,
   type Project,
   type ProjectStatus,
+  type FinancialRow,
   AFFILIATION_OPTIONS,
   getProjectAffiliationDisplay,
   getDepartmentHead,
@@ -294,7 +295,7 @@ function ReserveProjectManagementWithParams() {
 
   // 按年拆分时间段生成财务行
   const generateFinancialRowsByYear = (start: Date, end: Date) => {
-    const rows: any[] = []
+    const rows: FinancialRow[] = []
     let currentYear = start.getFullYear()
     const endYear = end.getFullYear()
     
@@ -375,17 +376,17 @@ function ReserveProjectManagementWithParams() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(15)
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading(true)
     // Pass currentUser to the server action for role-based filtering
     const fetchedProjects = await getProjectsAction(currentUser)
     setProjects(fetchedProjects)
     setLoading(false)
-  }
+  }, [currentUser])
 
   useEffect(() => {
     fetchProjects()
-  }, [currentUser]) // Re-fetch projects when currentUser changes
+  }, [fetchProjects]) // Re-fetch projects when currentUser changes
 
   // Handle URL parameters for direct project access
   useEffect(() => {
@@ -904,7 +905,7 @@ function ReserveProjectManagementWithParams() {
   }, [currentUser.id, canViewMonthlyReviews, canViewComprehensivePlan]) // 依赖用户ID和权限变化
 
   // 获取待办数量
-  const fetchTodoCount = async () => {
+  const fetchTodoCount = useCallback(async () => {
     try {
       const items = await getTodoItemsAction(currentUser.id)
       // 过滤掉月度审核参与人确认的待办事项
@@ -917,7 +918,7 @@ function ReserveProjectManagementWithParams() {
       console.error('获取待办数量失败:', error)
       setTodoCount(0)
     }
-  }
+  }, [currentUser.id])
 
   // 初始化和定期更新待办数量
   useEffect(() => {
@@ -927,7 +928,7 @@ function ReserveProjectManagementWithParams() {
       const interval = setInterval(fetchTodoCount, 30000)
       return () => clearInterval(interval)
     }
-  }, [currentUser.id])
+  }, [currentUser.id, fetchTodoCount])
 
   // Handle tab changes
   const handleTabChange = (tabKey: string) => {
@@ -1067,20 +1068,35 @@ function ReserveProjectManagementWithParams() {
                 }
               }}
             >
-              <SelectTrigger className="w-[120px] sm:w-[150px] lg:w-[180px] text-xs sm:text-sm">
-                <SelectValue placeholder="切换用户" />
+              <SelectTrigger className={cn(
+                "text-xs sm:text-sm",
+                isMobile ? "w-[80px] h-8 py-1 px-2" : "w-[100px] lg:w-[120px]"
+              )}>
+                <SelectValue placeholder="切换用户">
+                  {currentUser.name}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="[&_.select-item-indicator]:hidden [&_svg]:hidden [&_[data-state=checked]_svg]:hidden">
                 {mockUsers.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
+                  <SelectItem 
+                    key={user.id} 
+                    value={user.id}
+                    className={cn(
+                      isMobile ? "!py-2 !px-3 !min-h-0" : "",
+                      "[&>span[data-radix-select-item-indicator]]:hidden [&>span>svg]:hidden"
+                    )}
+                  >
                     <div className={cn(
                       "flex flex-col",
-                      isMobile ? "py-1" : ""
+                      isMobile ? "py-0 gap-0.5" : ""
                     )}>
-                      <span className="font-medium">{user.name}</span>
+                      <span className={cn(
+                        "font-medium",
+                        isMobile ? "leading-tight text-sm" : "leading-tight"
+                      )}>{user.name}</span>
                       <span className={cn(
                         "text-muted-foreground",
-                        isMobile ? "text-xs" : "text-sm"
+                        isMobile ? "text-xs leading-tight" : "text-sm leading-tight"
                       )}>
                         {user.role} - {user.center || user.department}
                       </span>
@@ -1193,23 +1209,35 @@ function ReserveProjectManagementWithParams() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-6 bg-gray-100 overflow-auto">
+      <main className={cn(
+        "flex-1 bg-gray-100 overflow-auto",
+        isMobile ? "p-2" : "p-4 sm:p-6"
+      )}>
         {currentView === "add-project" ? (
           <AddProjectReserve onBack={handleBackToProjects} currentUser={currentUser} />
         ) : currentView === "view-project" && currentProject ? (
           <ProjectDetailView onBack={handleBackToProjects} project={currentProject} />
         ) : currentView === "projects" && activeTab === "储备及综合计划" && activeSubTab === "评审" ? (
-          <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-lg shadow-md h-full flex flex-col">
+          <div className={cn(
+            "bg-white rounded-lg shadow-md h-full flex flex-col",
+            isMobile ? "p-1" : "p-2 sm:p-4 lg:p-6"
+          )}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 sm:gap-4">
               <div className="flex items-center">
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">储备项目列表</h2>
               </div>
-              <div className="flex flex-row gap-2 sm:gap-3">
+              <div className={cn(
+                "flex gap-2 sm:gap-3",
+                isMobile ? "flex-row" : "flex-row"
+              )}>
                 {(currentUser.role === "中心专职" || currentUser.role === "部门专职") && (
                   <Button 
                     onClick={handleAddProject} 
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white flex-1 sm:flex-none px-3 py-2 text-sm"
+                    className={cn(
+                      "bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm",
+                      isMobile ? "flex-1" : "flex-none"
+                    )}
                   >
                     <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> 
                     <span className="hidden xs:inline sm:inline">新增项目</span>
@@ -1217,25 +1245,26 @@ function ReserveProjectManagementWithParams() {
                   </Button>
                 )}
                 {(currentUser.role === "中心专职" || currentUser.role === "部门专职") && (
-                  <div className="relative flex-1 sm:flex-none">
-                    <Input
-                      type="file"
-                      accept=".xlsx, .xls"
-                      onChange={handleFileImport}
-                      className="sr-only"
-                      id="file-upload"
-                    />
-                    <Button 
-                      size="sm"
-                      className="bg-green-600 text-white hover:bg-green-700 w-full px-3 py-2 text-sm"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                    >
-                      <FileUp className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> 
-                      <span className="hidden xs:inline sm:inline">批量导入</span>
-                      <span className="xs:hidden sm:hidden">导入</span>
-                    </Button>
-                  </div>
+                  <Button 
+                    size="sm"
+                    className={cn(
+                      "bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm",
+                      isMobile ? "flex-1" : "flex-none"
+                    )}
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                  >
+                    <FileUp className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> 
+                    <span className="hidden xs:inline sm:inline">批量导入</span>
+                    <span className="xs:hidden sm:hidden">导入</span>
+                  </Button>
                 )}
+                <Input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileImport}
+                  className="sr-only"
+                  id="file-upload"
+                />
               </div>
             </div>
 
@@ -1402,7 +1431,7 @@ function ReserveProjectManagementWithParams() {
               // 移动端卡片布局
               <div className="flex-1 flex flex-col min-h-0">
                 <ScrollArea className="flex-1 w-full">
-                  <div className="space-y-4 p-2">
+                  <div className="space-y-4 p-0">
                     {paginatedProjects.length === 0 ? (
                       <div className="text-center text-gray-500 py-8">
                         无匹配项目。
@@ -1451,22 +1480,23 @@ function ReserveProjectManagementWithParams() {
                                 <span className="text-xs text-gray-500 font-medium">储备项目版本</span>
                                 <span className="text-sm text-gray-900">{project.version}</span>
                               </div>
+                              {/* 项目时间 */}
+                              {project.startDate && project.endDate && (
+                                <div className="flex flex-col space-y-1">
+                                  <span className="text-xs text-gray-500 font-medium">项目时间</span>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-900 font-medium">
+                                      {format(new Date(project.startDate), "yyyy-MM-dd", { locale: zhCN })}
+                                    </span>
+                                    <span className="text-gray-500 px-2">至</span>
+                                    <span className="text-gray-900 font-medium">
+                                      {format(new Date(project.endDate), "yyyy-MM-dd", { locale: zhCN })}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          
-                          {/* 时间信息 */}
-                          {project.startDate && project.endDate && (
-                            <div className="mb-4 p-3 bg-gray-50 rounded-md">
-                              <div className="flex flex-col space-y-1">
-                                <span className="text-xs text-gray-500 font-medium">项目时间</span>
-                                <span className="text-sm text-gray-900 leading-relaxed">
-                                  {format(new Date(project.startDate), "yyyy-MM-dd", { locale: zhCN })} 
-                                  <br />
-                                  至 {format(new Date(project.endDate), "yyyy-MM-dd", { locale: zhCN })}
-                                </span>
-                              </div>
-                            </div>
-                          )}
                           
                           {/* 操作按钮 */}
                           <div className="flex flex-col space-y-3 pt-3 border-t border-gray-100">
@@ -2368,21 +2398,33 @@ function ReserveProjectManagementWithParams() {
                         onValueChange={(value) => setCurrentProject(prev => prev ? { ...prev, departmentHead: value } : null)}
                       >
                         <SelectTrigger className={cn(
-                          isMobile ? "w-full" : "w-[12rem]"
+                          isMobile ? "w-[100px] h-8 py-1 px-2" : "w-[8rem]"
                         )}>
-                          <SelectValue placeholder="请选择负责人" />
+                          <SelectValue placeholder="请选择负责人">
+                            {currentProject.departmentHead}
+                          </SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="[&_[data-radix-select-item-indicator]]:hidden">
                           {getAvailableLeaders(currentUser).map((leader) => (
-                            <SelectItem key={leader.id} value={leader.name}>
+                            <SelectItem 
+                              key={leader.id} 
+                              value={leader.name}
+                              className={cn(
+                                isMobile ? "!py-2 !px-3 !min-h-0" : "",
+                                "[&>span[data-radix-select-item-indicator]]:hidden [&>span>svg]:hidden"
+                              )}
+                            >
                               <div className={cn(
                                 "flex flex-col",
-                                isMobile ? "py-1" : ""
+                                isMobile ? "py-0 gap-0.5" : ""
                               )}>
-                                <span className="font-medium">{leader.name}</span>
+                                <span className={cn(
+                                  "font-medium",
+                                  isMobile ? "leading-tight text-sm" : "leading-tight"
+                                )}>{leader.name}</span>
                                 <span className={cn(
                                   "text-muted-foreground",
-                                  isMobile ? "text-xs" : "text-sm"
+                                  isMobile ? "text-xs leading-tight" : "text-sm leading-tight"
                                 )}>
                                   {leader.role} - {leader.center || ""}
                                 </span>
@@ -2656,21 +2698,33 @@ function ReserveProjectManagementWithParams() {
                   name="approver"
                 >
                   <SelectTrigger className={cn(
-                    isMobile ? "flex-1" : "col-span-3"
+                    isMobile ? "w-[100px] h-8 py-1 px-2" : "col-span-2"
                   )}>
-                    <SelectValue placeholder="请选择审批人" />
+                    <SelectValue placeholder="请选择审批人">
+                      {selectedApprover}
+                    </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="[&_[data-radix-select-item-indicator]]:hidden">
                     {getAvailableApprovers(currentUser.department, currentUser.center).map((user) => (
-                      <SelectItem key={user.id} value={user.name}>
+                      <SelectItem 
+                        key={user.id} 
+                        value={user.name}
+                        className={cn(
+                          isMobile ? "!py-2 !px-3 !min-h-0" : "",
+                          "[&>span[data-radix-select-item-indicator]]:hidden [&>span>svg]:hidden"
+                        )}
+                      >
                         <div className={cn(
                           "flex flex-col",
-                          isMobile ? "py-1" : ""
+                          isMobile ? "py-0 gap-0.5" : ""
                         )}>
-                          <span className="font-medium">{user.name}</span>
+                          <span className={cn(
+                            "font-medium",
+                            isMobile ? "leading-tight text-sm" : "leading-tight"
+                          )}>{user.name}</span>
                           <span className={cn(
                             "text-muted-foreground",
-                            isMobile ? "text-xs" : "text-sm"
+                            isMobile ? "text-xs leading-tight" : "text-sm leading-tight"
                           )}>
                             {user.role} - {user.center || user.department}
                           </span>
